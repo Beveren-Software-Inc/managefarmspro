@@ -1,0 +1,48 @@
+[
+	{
+		"doctype": "Customer",
+		"fieldname": "owner_tab",
+		"fieldtype": "Tab Break",
+		"label": "Owner"
+	},
+	{
+		"doctype": "Customer",
+		"fieldname": "partners_tab",
+		"fieldtype": "Tab Break",
+		"label": "Partners"
+	},
+	{
+		"doctype": "Customer",
+		"fieldname": "partners_information",
+		"fieldtype": "Table",
+		"label": "Partners Information",
+		"options": "Partner"
+	},
+	{
+		"doctype": "Customer",
+		"fieldname": "plots_tab",
+		"fieldtype": "Tab Break",
+		"label": "Plots"
+	},
+	{
+		"doctype": "Customer",
+		"fieldname": "plot_list",
+		"fieldtype": "Table",
+		"label": "Plot List",
+		"options": "link plot owner"
+	},
+	{
+		"doctype": "Customer",
+		"fieldname": "customer_since",
+		"fieldtype": "Date",
+		"label": "Customer Since"
+	},
+	{
+		"doctype": "Customer",
+		"default": "0",
+		"fieldname": "is_active_",
+		"fieldtype": "Check",
+		"label": "Is Active ?"
+	}
+]
+
