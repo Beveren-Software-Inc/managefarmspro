@@ -9,6 +9,28 @@ app_license = "mit"
 # Includes in <head>
 # ------------------
 
+
+fixtures = [
+	{
+		"doctype": "Custom Field",
+		"filters": [
+			["name", "in", (
+				"Customer-custom_customer_email",
+				"Customer-custom_customer_phone",
+				"Customer-custom_customer_since",
+				"Customer-custom_is_active_",
+				"Customer-custom_plot_list",
+				"Customer-custom_plots",
+				"Customer-custom_partners_information",
+				"Customer-custom_partners",
+				"Customer-custom_owner",
+			)]
+		]
+	}
+]
+
+
+
 # include js, css files in header of desk.html
 # app_include_css = "/assets/managefarmspro/css/managefarmspro.css"
 # app_include_js = "/assets/managefarmspro/js/managefarmspro.js"
