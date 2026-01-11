@@ -15,6 +15,12 @@ fixtures = [
 		"doctype": "Custom Field",
 		"filters": [
 			["name", "in", (
+				"Sales Invoice-custom_work_id",
+				"Sales Invoice-custom_work_description",
+				"Sales Invoice-custom_work_name",
+				"Sales Invoice-custom_plot",
+				"Sales Invoice Item-custom_work_id",
+
 				"Customer-custom_customer_email",
 				"Customer-custom_customer_phone",
 				"Customer-custom_customer_since",
@@ -26,9 +32,52 @@ fixtures = [
 				"Customer-custom_owner",
 			)]
 		]
+	},
+	{
+		"doctype": "Property Setter",
+		"filters": [
+			["name", "in", (
+				"Sales Invoice-total_advance-hidden",
+				"Sales Invoice-use_company_roundoff_cost_center-hidden",
+				"Sales Invoice-is_debit_note-hidden",
+				"Sales Invoice-is_return-hidden",
+				"Sales Invoice-main-field_order",
+				"Sales Invoice-section_break_49-hidden",
+				"Sales Invoice-taxes_section-hidden",
+				"Sales Invoice-items_section-hidden",
+				"Sales Invoice-currency_and_price_list-hidden",
+				"Sales Invoice-accounting_dimensions_section-hidden",
+				"Sales Invoice-is_pos-hidden",
+				"Sales Invoice-more_info_tab-hidden",
+				"Sales Invoice-terms_tab-hidden",
+				"Sales Invoice-contact_and_address_tab-hidden",
+				"Sales Invoice-payments_tab-hidden",
+				"Sales Invoice Item-main-field_order",
+
+				"Customer-main-field_order",
+				"Customer-customer_group-hidden",
+				"Customer-salutation-hidden",
+				"Customer-more_info-hidden",
+				"Customer-companies-hidden",
+				"Customer-represents_company-hidden",
+				"Customer-defaults_tab-hidden",
+				"Customer-account_manager-hidden",
+				"Customer-prospect_name-hidden",
+				"Customer-opportunity_name-hidden",
+				"Customer-lead_name-hidden",
+				"Customer-gender-hidden",
+				"Customer-territory-hidden",
+				"Customer-portal_users_tab-hidden",
+				"Customer-settings_tab-hidden",
+				"Customer-sales_team_tab-hidden",
+				"Customer-accounting_tab-hidden",
+				"Customer-tax_tab-hidden",
+				"Customer-contact_and_address_tab-hidden",
+				"Customer-plots_tab-label",
+			)]
+		]
 	}
 ]
-
 
 
 # include js, css files in header of desk.html
