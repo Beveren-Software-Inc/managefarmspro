@@ -71,20 +71,29 @@ def get_data(filters):
 
 	grand_total = 0
 	supervision_charge = 0
+
+	# Fetch plot-level supervision settings once (all works belong to the same plot)
+	plot_details = frappe.db.get_value(
+		"Plot",
+		plot_name,
+		["customer_name", "plot_name", "supervision_charge", "use_fixed_supervision_charge", "fixed_supervision_charge"],
+		as_dict=True,
+	) if plot_name else None
+
+	use_fixed = plot_details.get("use_fixed_supervision_charge") if plot_details else 0
+
 	for invoice in invoices:
 		grand_total += invoice.get("total_cost", 0) or 0
 
-		plot_details = frappe.db.get_value(
-			"Plot", invoice.get("plot"), ["customer_name", "plot_name", "supervision_charge"], as_dict=True
-		)
-		invoice["customer"] = invoice.get("customer") or plot_details.get("customer_name", _("N/A"))
+		invoice["customer"] = invoice.get("customer") or (plot_details.get("customer_name") if plot_details else _("N/A"))
 		invoice["plot_name"] = plot_details.get("plot_name") if plot_details else _("N/A")
 
-		supervision_percent = plot_details.get("supervision_charge") if plot_details else 0
-		invoice_supervision_charge = (supervision_percent / 100) * invoice.get("total_cost", 0)
-		supervision_charge += invoice_supervision_charge
+		# Only accumulate percentage-based supervision charge per work item
+		if not use_fixed:
+			supervision_percent = plot_details.get("supervision_charge") if plot_details else 0
+			supervision_charge += (supervision_percent / 100) * invoice.get("total_cost", 0)
 
-		# Fetch item names from Item Doctype and include them
+		# Fetch item details for this work entry
 		labor_details = frappe.get_all(
 			"Labor Child",
 			filters={"parent": invoice.get("work_id")},
@@ -92,7 +101,7 @@ def get_data(filters):
 				"labor_name as item_code",
 				"number_of_labor_units as qty",
 				"labor_unit as unit",
-				"unit_price as rate",  # Include rate
+				"unit_price as rate",
 				"total_price as amount",
 				"'Labor' as item_group",
 			],
@@ -104,7 +113,7 @@ def get_data(filters):
 				"item_name as item_code",
 				"number_of_equipment_units as qty",
 				"equipment_unit as unit",
-				"unit_price as rate",  # Include rate
+				"unit_price as rate",
 				"total_price as amount",
 				"'Equipment' as item_group",
 			],
@@ -116,7 +125,7 @@ def get_data(filters):
 				"material_name as item_code",
 				"number_of_material_units as qty",
 				"material_unit as unit",
-				"unit_price as rate",  # Include rate
+				"unit_price as rate",
 				"total_price as amount",
 				"'Raw Material' as item_group",
 			],
@@ -130,9 +139,11 @@ def get_data(filters):
 
 		# Combine the details into one list of items
 		invoice["items"] = labor_details + equipment_details + material_details
-
-		# Ensure items are initialized
 		invoice["items"] = invoice["items"] if invoice["items"] else []
+
+	# For fixed supervision charge: set it once after the loop, regardless of work count
+	if use_fixed:
+		supervision_charge = plot_details.get("fixed_supervision_charge") or 0
 
 	return invoices, grand_total, supervision_charge
 

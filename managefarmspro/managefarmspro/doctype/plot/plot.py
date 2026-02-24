@@ -14,17 +14,31 @@ class Plot(Document):
 		month_end = get_last_day(current_date)
 
 		# Get total spent from submitted works for current month
-		# Including supervision charge in the calculation
-		total_spent = frappe.db.sql(
-			"""
-			SELECT COALESCE(SUM(total_cost + (total_cost * %s / 100)), 0)
-			FROM tabWork
-			WHERE plot = %s
-			AND docstatus = 1
-			AND work_date BETWEEN %s AND %s
-		""",
-			(self.supervision_charge or 0, self.name, month_start, month_end),
-		)[0][0]
+		if self.use_fixed_supervision_charge and self.fixed_supervision_charge:
+			# Fixed charge: sum raw work costs then add the flat supervision amount
+			total_works_cost = frappe.db.sql(
+				"""
+				SELECT COALESCE(SUM(total_cost), 0)
+				FROM tabWork
+				WHERE plot = %s
+				AND docstatus = 1
+				AND work_date BETWEEN %s AND %s
+				""",
+				(self.name, month_start, month_end),
+			)[0][0]
+			total_spent = total_works_cost + (self.fixed_supervision_charge or 0)
+		else:
+			# Percentage charge: add supervision % on top of each work's cost
+			total_spent = frappe.db.sql(
+				"""
+				SELECT COALESCE(SUM(total_cost + (total_cost * %s / 100)), 0)
+				FROM tabWork
+				WHERE plot = %s
+				AND docstatus = 1
+				AND work_date BETWEEN %s AND %s
+				""",
+				(self.supervision_charge or 0, self.name, month_start, month_end),
+			)[0][0]
 
 		# Update the total_amount_spent
 		self.db_set("total_amount_spent", total_spent, update_modified=False)
@@ -36,6 +50,12 @@ class Plot(Document):
 			)
 
 	def validate(self):
+		# Enforce mutual exclusivity between the two supervision charge types
+		if self.use_fixed_supervision_charge:
+			self.supervision_charge = 0
+		else:
+			self.fixed_supervision_charge = 0
+
 		# Sync maintenance_balance when monthly_maintenance_budget changes
 		if self.has_value_changed("monthly_maintenance_budget"):
 			self.maintenance_balance = self.monthly_maintenance_budget
@@ -50,8 +70,6 @@ class Plot(Document):
 			self.maintenance_balance = self.monthly_maintenance_budget
 			self.total_amount_spent = 0
 			self.last_maintenance_reset = get_first_day(getdate())
-			# self.db_update()
-			# frappe.db.commit()
 
 	def check_monthly_reset(self):
 		if not self.monthly_maintenance_budget:

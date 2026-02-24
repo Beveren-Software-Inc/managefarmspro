@@ -42,6 +42,13 @@ frappe.ui.form.on("Plot", {
 		// Re-trigger the plot_number event to update plot_name when customer_name changes
 		frm.trigger("plot_number");
 	},
+
+	use_fixed_supervision_charge: function (frm) {
+		// Clear both fields on toggle — forces user to enter a value in the active mandatory field
+		frm.set_value("supervision_charge", null);
+		frm.set_value("fixed_supervision_charge", null);
+		frm.refresh_fields(["supervision_charge", "fixed_supervision_charge"]);
+	},
 });
 
 function setupRealtimeUpdates(frm) {
