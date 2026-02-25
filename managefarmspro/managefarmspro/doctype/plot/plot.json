@@ -21,6 +21,8 @@
   "monthly_maintenance_budget",
   "column_break_bdcv",
   "supervision_charge",
+  "use_fixed_supervision_charge",
+  "fixed_supervision_charge",
   "section_break_twca",
   "this_months_spending_column",
   "total_amount_spent",
@@ -248,7 +250,21 @@
    "fieldtype": "Percent",
    "label": "Supervision Charges",
    "precision": "2",
-   "reqd": 1
+   "mandatory_depends_on": "eval:!doc.use_fixed_supervision_charge",
+   "read_only_depends_on": "eval:doc.use_fixed_supervision_charge"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_fixed_supervision_charge",
+   "fieldtype": "Check",
+   "label": "Use Fixed Supervision Charge"
+  },
+  {
+   "depends_on": "eval:doc.use_fixed_supervision_charge",
+   "fieldname": "fixed_supervision_charge",
+   "fieldtype": "Currency",
+   "label": "Fixed Supervision Charge",
+   "mandatory_depends_on": "eval:doc.use_fixed_supervision_charge"
   },
   {
    "fieldname": "budget_settings_section",
