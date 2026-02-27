@@ -5,37 +5,60 @@ from frappe.utils import get_first_day, get_last_day, getdate
 
 class Plot(Document):
 	def onload(self):
-		"""Updates total_amount_spent on form load for the current month"""
-		self.update_current_month_spending()
+		"""Displays current spending for the month — no DB writes."""
+		total_spent = self._calculate_current_month_spending()
+		self.total_amount_spent = total_spent
+		if self.monthly_maintenance_budget:
+			self.maintenance_balance = self.monthly_maintenance_budget - total_spent
 
-	def update_current_month_spending(self):
+	def _calculate_current_month_spending(self):
+		"""Pure calculation — returns total spending for the current month. No DB writes."""
 		current_date = getdate()
 		month_start = get_first_day(current_date)
 		month_end = get_last_day(current_date)
 
-		# Get total spent from submitted works for current month
-		# Including supervision charge in the calculation
-		total_spent = frappe.db.sql(
-			"""
-			SELECT COALESCE(SUM(total_cost + (total_cost * %s / 100)), 0)
-			FROM tabWork
-			WHERE plot = %s
-			AND docstatus = 1
-			AND work_date BETWEEN %s AND %s
-		""",
-			(self.supervision_charge or 0, self.name, month_start, month_end),
-		)[0][0]
+		if self.use_fixed_supervision_charge and self.fixed_supervision_charge:
+			# Fixed charge: sum raw work costs then add the flat supervision amount
+			total_works_cost = frappe.db.sql(
+				"""
+				SELECT COALESCE(SUM(total_cost), 0)
+				FROM tabWork
+				WHERE plot = %s
+				AND docstatus = 1
+				AND work_date BETWEEN %s AND %s
+				""",
+				(self.name, month_start, month_end),
+			)[0][0]
+			return total_works_cost + (self.fixed_supervision_charge or 0)
+		else:
+			# Percentage charge: add supervision % on top of each work's cost
+			return frappe.db.sql(
+				"""
+				SELECT COALESCE(SUM(total_cost + (total_cost * %s / 100)), 0)
+				FROM tabWork
+				WHERE plot = %s
+				AND docstatus = 1
+				AND work_date BETWEEN %s AND %s
+				""",
+				(self.supervision_charge or 0, self.name, month_start, month_end),
+			)[0][0]
 
-		# Update the total_amount_spent
+	def update_current_month_spending(self):
+		"""Recalculates and persists monthly spending to DB. Call after work submit/cancel."""
+		total_spent = self._calculate_current_month_spending()
 		self.db_set("total_amount_spent", total_spent, update_modified=False)
-
-		# If monthly maintenance budget exists, update the maintenance balance
 		if self.monthly_maintenance_budget:
 			self.db_set(
 				"maintenance_balance", self.monthly_maintenance_budget - total_spent, update_modified=False
 			)
 
 	def validate(self):
+		# Enforce mutual exclusivity between the two supervision charge types
+		if self.use_fixed_supervision_charge:
+			self.supervision_charge = 0
+		else:
+			self.fixed_supervision_charge = 0
+
 		# Sync maintenance_balance when monthly_maintenance_budget changes
 		if self.has_value_changed("monthly_maintenance_budget"):
 			self.maintenance_balance = self.monthly_maintenance_budget
@@ -50,8 +73,6 @@ class Plot(Document):
 			self.maintenance_balance = self.monthly_maintenance_budget
 			self.total_amount_spent = 0
 			self.last_maintenance_reset = get_first_day(getdate())
-			# self.db_update()
-			# frappe.db.commit()
 
 	def check_monthly_reset(self):
 		if not self.monthly_maintenance_budget:
@@ -83,159 +104,80 @@ class Plot(Document):
 		self.update_customer_plot_list()
 		self.update_cluster_plots()
 
-		# Fetch work data dynamically, assuming it's passed in self
-		if hasattr(self, "work_details"):
-			for work in self.work_details:
-				self.update_plot_work_details(work)
-				self.update_cluster_work_details(work)
-
 	def remove_from_previous_cluster(self, previous_cluster_name):
-		try:
-			previous_cluster_doc = frappe.get_doc("Cluster", previous_cluster_name)
-
-			# Remove the plot from the previous cluster's child table
-			previous_cluster_doc.plots = [
-				plot for plot in previous_cluster_doc.plots if plot.plot != self.name
-			]
-			previous_cluster_doc.save()
-
-		except frappe.DoesNotExistError:
-			frappe.msgprint(f"Error: Previous cluster {previous_cluster_name} does not exist.")
+		"""Remove this plot from the previous cluster's plots child table."""
+		if frappe.db.exists("Cluster", previous_cluster_name):
+			frappe.db.delete(
+				"link plot cluster",
+				{"parent": previous_cluster_name, "parenttype": "Cluster", "plot": self.name},
+			)
+		else:
 			frappe.log_error(
 				f"Previous Cluster {previous_cluster_name} not found for Plot {self.name}",
 				"Remove from Old Cluster Error",
 			)
 
 	def update_customer_plot_list(self):
-		# Update the list of plots for the corresponding Customer
+		"""Update this plot's row in the Customer's plot_list child table."""
 		customer_name = self.customer_name
-		if customer_name:
-			try:
-				customer_doc = frappe.get_doc("Customer", customer_name)
-				exists = False
-				for plot in customer_doc.plot_list:
-					if plot.plot == self.name:
-						plot.plot_name = self.plot_name
-						plot.plot_area = self.area
-						plot.plot_cluster = self.cluster
-						exists = True
-						break
+		if not customer_name:
+			return
 
-				if not exists:
-					customer_doc.append(
-						"plot_list",
-						{
-							"plot": self.name,
-							"plot_name": self.plot_name,
-							"plot_area": self.area,
-							"cluster": self.cluster,
-						},
-					)
-				customer_doc.save()
+		if not frappe.db.exists("Customer", customer_name):
+			frappe.log_error(
+				f"Customer {customer_name} not found while creating/updating Plot {self.name}",
+				"Populate Plot List Error",
+			)
+			return
 
-			except frappe.DoesNotExistError:
-				frappe.log_error(
-					f"Customer {customer_name} not found while creating/updating Plot {self.name}",
-					"Populate Plot List Error",
-				)
+		row_filters = {"parent": customer_name, "plot": self.name}
+		update_fields = {
+			"plot_name": self.plot_name,
+			"plot_area": self.area,
+			"cluster": self.cluster,
+		}
+
+		if frappe.db.exists("link plot owner", row_filters):
+			frappe.db.set_value("link plot owner", row_filters, update_fields)
+		else:
+			frappe.get_doc({
+				"doctype": "link plot owner",
+				"plot": self.name,
+				"parent": customer_name,
+				"parentfield": "plot_list",
+				"parenttype": "Customer",
+				**update_fields,
+			}).insert()
 
 	def update_cluster_plots(self):
-		# Update the Plots section of the Cluster Doctype
+		"""Update this plot's row in the Cluster's plots child table."""
 		cluster_name = self.cluster_name
-		if cluster_name:
-			try:
-				cluster_doc = frappe.get_doc("Cluster", cluster_name)
-				exists = False
-				for plot in cluster_doc.plots:
-					if plot.plot == self.name:
-						plot.plot_name = self.plot_name
-						plot.plot_area = self.area
-						plot.units = self.units
-						exists = True
-						break
+		if not cluster_name:
+			return
 
-				if not exists:
-					cluster_doc.append(
-						"plots",
-						{
-							"plot": self.name,
-							"plot_name": self.plot_name,
-							"plot_area": self.area,
-							"units": self.units,
-						},
-					)
-
-				cluster_doc.save()
-
-			except frappe.DoesNotExistError:
-				frappe.msgprint(f"Error: New cluster {cluster_name} does not exist.")
-				frappe.log_error(
-					f"Cluster {cluster_name} not found while creating/updating Plot {self.name}",
-					"Populate Plots Error",
-				)
-
-	def update_plot_work_details(self, work_data):
-		# This method updates the Work details in the Plot's child table
-		exists = False
-		for work in self.work_details:  # Assuming work_details is the child table in Plot
-			if work.work_id == work_data.work_id:
-				# If the work entry already exists in the plot, update it
-				work.work_name = work_data.work_name
-				work.work_date = work_data.work_date
-				work.status = work_data.status
-				work.total_cost = work_data.total_cost
-				exists = True
-				break
-
-		if not exists:
-			# Add a new row to the Plot's work child table
-			self.append(
-				"work_details",
-				{
-					"work_id": work_data.work_id,
-					"work_name": work_data.work_name,
-					"work_date": work_data.work_date,
-					"status": work_data.status,
-					"total_cost": work_data.total_cost,
-				},
+		if not frappe.db.exists("Cluster", cluster_name):
+			frappe.msgprint(f"Error: New cluster {cluster_name} does not exist.")
+			frappe.log_error(
+				f"Cluster {cluster_name} not found while creating/updating Plot {self.name}",
+				"Populate Plots Error",
 			)
+			return
 
-	def update_cluster_work_details(self, work_data):
-		# Update the Work details in the Cluster's child table
-		cluster_name = self.cluster_name
-		if cluster_name:
-			try:
-				cluster_doc = frappe.get_doc("Cluster", cluster_name)
+		row_filters = {"parent": cluster_name, "plot": self.name}
+		update_fields = {
+			"plot_name": self.plot_name,
+			"plot_area": self.area,
+			"units": self.units,
+		}
 
-				exists = False
-				for cluster_work in cluster_doc.table_bcjd:
-					if cluster_work.work_id == work_data.work_id:
-						# If the work entry already exists in the cluster, update it
-						cluster_work.work_name = work_data.work_name
-						cluster_work.work_date = work_data.work_date
-						cluster_work.status = work_data.status
-						cluster_work.total_cost = work_data.total_cost
-						exists = True
-						break
-
-				if not exists:
-					# Add a new row to the Cluster's work child table
-					cluster_doc.append(
-						"table_bcjd",
-						{
-							"work_id": work_data.work_id,
-							"work_name": work_data.work_name,
-							"work_date": work_data.work_date,
-							"status": work_data.status,
-							"total_cost": work_data.total_cost,
-						},
-					)
-				# Save the Cluster document
-				cluster_doc.save()
-
-			except frappe.DoesNotExistError:
-				frappe.msgprint(f"Error: Cluster {cluster_name} does not exist.")
-				frappe.log_error(
-					f"Cluster {cluster_name} not found while updating work details for Plot {self.name}",
-					"Update Work Details Error",
-				)
+		if frappe.db.exists("link plot cluster", row_filters):
+			frappe.db.set_value("link plot cluster", row_filters, update_fields)
+		else:
+			frappe.get_doc({
+				"doctype": "link plot cluster",
+				"plot": self.name,
+				"parent": cluster_name,
+				"parentfield": "plots",
+				"parenttype": "Cluster",
+				**update_fields,
+			}).insert()
