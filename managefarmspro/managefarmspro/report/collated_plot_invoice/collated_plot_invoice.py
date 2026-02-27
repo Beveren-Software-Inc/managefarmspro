@@ -312,6 +312,33 @@ def get_data(filters):
 
 
 @frappe.whitelist()
+def get_invoice_preview(filters):
+	"""Read-only preview — calls get_data() and returns structured data for the preview modal.
+	Zero DB writes. No document creation. Safe to call multiple times.
+	"""
+	if isinstance(filters, str):
+		filters = json.loads(filters)
+
+	invoices, grand_total, supervision_charge = get_data(filters)
+
+	if not invoices:
+		return None
+
+	final_grand_total = grand_total + supervision_charge
+	customer = invoices[0].get("customer")
+	plot_name = invoices[0].get("plot_name") or invoices[0].get("plot")
+
+	return {
+		"invoices": invoices,
+		"grand_total": grand_total,
+		"supervision_charge": supervision_charge,
+		"final_grand_total": final_grand_total,
+		"final_grand_total_in_words": frappe.utils.money_in_words(final_grand_total),
+		"customer": customer,
+		"plot_name": plot_name,
+	}
+
+@frappe.whitelist()
 def download_invoice_pdf(filters):
 	"""
 	Generate a consolidated Sales Invoice PDF, link the invoice number to each work entry,
