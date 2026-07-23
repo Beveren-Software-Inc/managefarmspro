@@ -87,7 +87,7 @@ class Plot(Document):
 		if hasattr(self, "work_details"):
 			for work in self.work_details:
 				self.update_plot_work_details(work)
-				self.update_cluster_work_details(work)
+			self.update_cluster_work_details_bulk(self.work_details)
 
 	def remove_from_previous_cluster(self, previous_cluster_name):
 		try:
@@ -200,42 +200,48 @@ class Plot(Document):
 				},
 			)
 
-	def update_cluster_work_details(self, work_data):
-		# Update the Work details in the Cluster's child table
+	def update_cluster_work_details_bulk(self, works):
+		# Update the Work details in the Cluster's child table for every work
+		# row on this plot in a single Cluster load + single save, instead of
+		# one load+save per work (previously O(n) full Cluster saves per Plot
+		# save — same end state, just without the redundant round trips).
+		# Matching by work_id is indexed here instead of linearly scanned per
+		# row for the same reason.
 		cluster_name = self.cluster_name
-		if cluster_name:
-			try:
-				cluster_doc = frappe.get_doc("Cluster", cluster_name)
+		if not cluster_name or not works:
+			return
 
-				exists = False
-				for cluster_work in cluster_doc.table_bcjd:
-					if cluster_work.work_id == work_data.work_id:
-						# If the work entry already exists in the cluster, update it
-						cluster_work.work_name = work_data.work_name
-						cluster_work.work_date = work_data.work_date
-						cluster_work.status = work_data.status
-						cluster_work.total_cost = work_data.total_cost
-						exists = True
-						break
+		try:
+			cluster_doc = frappe.get_doc("Cluster", cluster_name)
+		except frappe.DoesNotExistError:
+			frappe.msgprint(f"Error: Cluster {cluster_name} does not exist.")
+			frappe.log_error(
+				f"Cluster {cluster_name} not found while updating work details for Plot {self.name}",
+				"Update Work Details Error",
+			)
+			return
 
-				if not exists:
-					# Add a new row to the Cluster's work child table
-					cluster_doc.append(
-						"table_bcjd",
-						{
-							"work_id": work_data.work_id,
-							"work_name": work_data.work_name,
-							"work_date": work_data.work_date,
-							"status": work_data.status,
-							"total_cost": work_data.total_cost,
-						},
-					)
-				# Save the Cluster document
-				cluster_doc.save()
-
-			except frappe.DoesNotExistError:
-				frappe.msgprint(f"Error: Cluster {cluster_name} does not exist.")
-				frappe.log_error(
-					f"Cluster {cluster_name} not found while updating work details for Plot {self.name}",
-					"Update Work Details Error",
+		existing_by_work_id = {row.work_id: row for row in cluster_doc.table_bcjd}
+		for work_data in works:
+			cluster_work = existing_by_work_id.get(work_data.work_id)
+			if cluster_work:
+				# If the work entry already exists in the cluster, update it
+				cluster_work.work_name = work_data.work_name
+				cluster_work.work_date = work_data.work_date
+				cluster_work.status = work_data.status
+				cluster_work.total_cost = work_data.total_cost
+			else:
+				# Add a new row to the Cluster's work child table
+				cluster_doc.append(
+					"table_bcjd",
+					{
+						"work_id": work_data.work_id,
+						"work_name": work_data.work_name,
+						"work_date": work_data.work_date,
+						"status": work_data.status,
+						"total_cost": work_data.total_cost,
+					},
 				)
+
+		# Save the Cluster document once for all of the above
+		cluster_doc.save()

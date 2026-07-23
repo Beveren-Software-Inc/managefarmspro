@@ -57,6 +57,10 @@ app_include_css = "/assets/managefarmspro/css/custom_help_menu.css"
 # website redirect
 website_redirects = [{"source": "/app/home", "target": "/app/managefarmspro"}]
 
+# ManageFarmsPro SPA — keep client-side (vue-router) paths resolving to the
+# same www page on refresh/deep-link.
+website_route_rules = [{"from_route": "/farmpro/<path:app_path>", "to_route": "farmpro"}]
+
 
 # Generators
 # ----------
