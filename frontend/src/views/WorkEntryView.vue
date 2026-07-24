@@ -8,6 +8,7 @@ import BalancePill from "@/components/BalancePill.vue"
 import ConfirmDialog from "@/components/ConfirmDialog.vue"
 import { fetchPlots, plotBalance } from "@/data/plots.js"
 import { fetchWorkItems, fetchItemOptions, createWork } from "@/data/work_entry.js"
+import { useLineItemSections } from "@/composables/useLineItemSections.js"
 import { formatCurrency } from "@/format.js"
 
 const route = useRoute()
@@ -47,45 +48,7 @@ function onWorkTypeSelect(option) {
   form.description = option?.description || form.description
 }
 
-const sections = reactive({
-  labor: { open: true, icon: "users", label: "Labor", itemOptions: [], items: [], picker: { itemCode: "", qty: 1, count: 1 } },
-  equipment: { open: false, icon: "work", label: "Equipment", itemOptions: [], items: [], picker: { itemCode: "", qty: 1, count: 1 } },
-  material: { open: false, icon: "layers", label: "Material", itemOptions: [], items: [], picker: { itemCode: "", qty: 1, count: 1 } },
-})
-
-function selectedItemFor(category) {
-  const sec = sections[category]
-  return sec.itemOptions.find((o) => o.value === sec.picker.itemCode) || null
-}
-
-// Price and unit are already loaded (fetchItemOptions batches them up
-// front), so adding a line item is instant — no network round trip.
-function addItem(category) {
-  const sec = sections[category]
-  const item = selectedItemFor(category)
-  if (!item || !sec.picker.qty) return
-
-  const count = sec.picker.count || 1
-  const qty = sec.picker.qty
-  sec.items.push({
-    item_code: item.value,
-    item_display_name: count > 1 ? `${count} ${item.label}` : item.label,
-    qty,
-    unit: item.stock_uom,
-    unit_price: item.unit_price,
-    total_price: item.unit_price * qty * count,
-  })
-  sec.picker = { itemCode: "", qty: 1, count: 1 }
-  sec.open = true
-}
-
-function removeItem(category, idx) {
-  sections[category].items.splice(idx, 1)
-}
-
-function sectionTotal(category) {
-  return sections[category].items.reduce((t, i) => t + (i.total_price || 0), 0)
-}
+const { sections, selectedItemFor, addItem, removeItem, sectionTotal } = useLineItemSections()
 
 const totalCost = computed(() => sectionTotal("labor") + sectionTotal("equipment") + sectionTotal("material"))
 
