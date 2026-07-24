@@ -25,7 +25,9 @@ onMounted(async () => {
   }
 })
 
-const plotWorks = computed(() => plot.value?.work_details || [])
+const plotWorks = computed(() =>
+  [...(plot.value?.work_details || [])].sort((a, b) => new Date(b.work_date) - new Date(a.work_date)),
+)
 
 const tab = ref("details")
 const tabs = computed(() => [
@@ -70,7 +72,7 @@ const spentPct = computed(() =>
         </div>
         <button
           class="sm:ml-auto flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-hover"
-          @click="router.push('/works/new')"
+          @click="router.push({ path: '/works/new', query: { plot: plot.name } })"
         >
           <AppIcon name="plus" :size="17" /> Log Work
         </button>

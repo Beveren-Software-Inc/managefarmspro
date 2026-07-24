@@ -16,7 +16,6 @@ const error = ref(null)
 const stats = ref({
   plotCount: 0,
   workCount: 0,
-  lineItemCount: 0,
   invoicedTotal: 0,
   invoiceStatus: [],
   worksTrend: [],
@@ -45,11 +44,14 @@ const quickActions = [
 
   <div v-else class="space-y-6">
     <!-- KPI cards -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <KpiCard label="Plots" :value="loading ? '—' : String(stats.plotCount)" icon="plot" accent="primary" />
-      <KpiCard label="Works Logged" :value="loading ? '—' : String(stats.workCount)" icon="work" accent="accent" />
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <button class="text-left w-full rounded-xl transition-transform hover:-translate-y-0.5" @click="router.push('/plots')">
+        <KpiCard label="Plots" :value="loading ? '—' : String(stats.plotCount)" icon="plot" accent="primary" />
+      </button>
+      <button class="text-left w-full rounded-xl transition-transform hover:-translate-y-0.5" @click="router.push('/works')">
+        <KpiCard label="Works Logged" :value="loading ? '—' : String(stats.workCount)" icon="work" accent="accent" />
+      </button>
       <KpiCard label="Invoiced Amount" :value="loading ? '—' : formatCurrency(stats.invoicedTotal)" icon="wallet" accent="info" />
-      <KpiCard label="Line Items" :value="loading ? '—' : String(stats.lineItemCount)" icon="layers" accent="warning" />
     </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -118,7 +120,9 @@ const quickActions = [
         <ul v-else class="divide-y divide-border">
           <li v-for="p in stats.lowBalancePlots" :key="p.plot_name" class="flex items-center gap-3 py-2.5">
             <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium text-foreground truncate">{{ p.plot_name }}</p>
+              <RouterLink :to="`/plots/${p.plot_name}`" class="text-sm font-medium text-foreground truncate hover:text-primary hover:underline block">
+                {{ p.plot_name }}
+              </RouterLink>
               <p class="text-xs text-muted truncate">{{ p.customer_name }}</p>
             </div>
             <BalancePill :balance="p.maintenance_balance" :budget="p.monthly_maintenance_budget" size="sm" />

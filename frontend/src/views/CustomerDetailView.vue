@@ -55,37 +55,45 @@ const totalBalance = computed(() => plots.value.reduce((t, p) => t + plotBalance
   <div v-else-if="error" class="text-center py-16 text-negative bg-negative-soft rounded-xl">{{ error }}</div>
 
   <div v-else-if="customer" class="space-y-6">
-    <button class="flex items-center gap-1.5 text-sm text-muted hover:text-foreground" @click="router.push('/owners')">
-      <AppIcon name="arrowLeft" :size="16" /> Back to Customers
-    </button>
+    <div
+      :class="
+        tab === 'invoices'
+          ? 'sticky top-16 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pt-6 pb-4 bg-background border-b border-border space-y-6'
+          : 'space-y-6'
+      "
+    >
+      <button class="flex items-center gap-1.5 text-sm text-muted hover:text-foreground" @click="router.push('/owners')">
+        <AppIcon name="arrowLeft" :size="16" /> Back to Customers
+      </button>
 
-    <!-- Header -->
-    <div class="bg-surface border border-border rounded-xl p-6">
-      <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div class="w-16 h-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center text-xl font-semibold font-display shrink-0">
-          {{ initials(customer.customer_name) }}
-        </div>
-        <div class="min-w-0">
-          <div class="flex items-center gap-3 flex-wrap">
-            <h2 class="font-display text-2xl font-semibold text-foreground">{{ customer.customer_name }}</h2>
-            <StatusBadge :status="customer.disabled ? 'Inactive' : 'Active'" />
+      <!-- Header -->
+      <div class="bg-surface border border-border rounded-xl p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div class="w-16 h-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center text-xl font-semibold font-display shrink-0">
+            {{ initials(customer.customer_name) }}
           </div>
-          <p class="text-sm text-muted mt-1">{{ customer.customer_type }} · {{ customer.name }} · Customer since {{ formatDate(customer.creation) }}</p>
-        </div>
-        <div class="sm:ml-auto grid grid-cols-2 gap-4 sm:text-right">
-          <div>
-            <p class="text-xs text-muted">Total Monthly Budget</p>
-            <p class="font-display text-lg font-semibold text-foreground">{{ formatCurrency(totalBudget) }}</p>
+          <div class="min-w-0">
+            <div class="flex items-center gap-3 flex-wrap">
+              <h2 class="font-display text-2xl font-semibold text-foreground">{{ customer.customer_name }}</h2>
+              <StatusBadge :status="customer.disabled ? 'Inactive' : 'Active'" />
+            </div>
+            <p class="text-sm text-muted mt-1">{{ customer.customer_type }} · {{ customer.name }} · Customer since {{ formatDate(customer.creation) }}</p>
           </div>
-          <div>
-            <p class="text-xs text-muted">Total Balance</p>
-            <BalancePill :balance="totalBalance" :budget="totalBudget" size="md" />
+          <div class="sm:ml-auto grid grid-cols-2 gap-4 sm:text-right">
+            <div>
+              <p class="text-xs text-muted">Total Monthly Budget</p>
+              <p class="font-display text-lg font-semibold text-foreground">{{ formatCurrency(totalBudget) }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-muted">Total Balance</p>
+              <BalancePill :balance="totalBalance" :budget="totalBudget" size="md" />
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <TabNav v-model="tab" :tabs="tabs" />
+      <TabNav v-model="tab" :tabs="tabs" />
+    </div>
 
     <!-- Basic Info -->
     <div v-if="tab === 'basic'" class="grid sm:grid-cols-2 gap-4">

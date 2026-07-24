@@ -51,36 +51,38 @@ watch(status, () => loadPage(true))
 
 <template>
   <div class="space-y-5">
-    <div class="flex items-center justify-between gap-3 flex-wrap">
-      <div>
-        <h2 class="font-display text-2xl font-semibold text-foreground">Invoice History</h2>
-        <p class="text-sm text-muted mt-1">Sales invoices generated from plot works.</p>
-      </div>
-      <router-link
-        to="/invoices/generate"
-        class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-hover"
-      >
-        <AppIcon name="invoice" :size="17" /> Generate Invoice
-      </router-link>
-    </div>
-
-    <div class="flex flex-col sm:flex-row sm:items-end gap-3">
-      <label class="block flex-1 sm:max-w-xs">
-        <span class="text-xs text-muted mb-1.5 block">Search</span>
-        <div class="relative">
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted"><AppIcon name="search" :size="17" /></span>
-          <input
-            v-model="search"
-            type="search"
-            placeholder="Invoice, plot or customer…"
-            class="w-full pl-9 pr-3 py-2.5 rounded-lg bg-surface border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
+    <div class="sticky top-16 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pt-6 pb-4 bg-background border-b border-border space-y-5">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h2 class="font-display text-2xl font-semibold text-foreground">Invoice History</h2>
+          <p class="text-sm text-muted mt-1">Sales invoices generated from plot works.</p>
         </div>
-      </label>
-      <label class="block w-full sm:w-48">
-        <span class="text-xs text-muted mb-1.5 block">Filter by Status</span>
-        <FilterCombobox v-model="status" :options="statusOptions" placeholder="All statuses" />
-      </label>
+        <router-link
+          to="/invoices/generate"
+          class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-hover"
+        >
+          <AppIcon name="invoice" :size="17" /> Generate Invoice
+        </router-link>
+      </div>
+
+      <div class="flex flex-col sm:flex-row sm:items-end gap-3">
+        <label class="block flex-1 sm:max-w-xs">
+          <span class="text-xs text-muted mb-1.5 block">Search</span>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted"><AppIcon name="search" :size="17" /></span>
+            <input
+              v-model="search"
+              type="search"
+              placeholder="Invoice, plot or customer…"
+              class="w-full pl-9 pr-3 py-2.5 rounded-lg bg-surface border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+        </label>
+        <label class="block w-full sm:w-48">
+          <span class="text-xs text-muted mb-1.5 block">Filter by Status</span>
+          <FilterCombobox v-model="status" :options="statusOptions" placeholder="All statuses" />
+        </label>
+      </div>
     </div>
 
     <p v-if="loading" class="text-sm text-muted text-center py-16">Loading invoices…</p>

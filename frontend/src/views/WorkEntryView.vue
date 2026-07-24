@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from "vue"
-import { useRouter } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
 import FilterCombobox from "@/components/FilterCombobox.vue"
 import RecordPicker from "@/components/RecordPicker.vue"
@@ -10,6 +10,7 @@ import { fetchPlots, plotBalance } from "@/data/plots.js"
 import { fetchWorkItems, fetchItemOptions, createWork } from "@/data/work_entry.js"
 import { formatCurrency } from "@/format.js"
 
+const route = useRoute()
 const router = useRouter()
 
 const plots = ref([])
@@ -33,7 +34,7 @@ onMounted(async () => {
 })
 
 const form = reactive({
-  plot: "",
+  plot: typeof route.query.plot === "string" ? route.query.plot : "",
   work_type_name: "",
   work_date: new Date().toISOString().slice(0, 10),
   description: "",

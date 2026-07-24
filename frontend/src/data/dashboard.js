@@ -23,17 +23,13 @@ function chartToSeries(chart) {
 }
 
 export async function fetchDashboardData() {
-  const [plotCount, workCount, laborCount, equipmentCount, materialCount, invoiceStatusChart, worksTrendChart, lowBalance] =
-    await Promise.all([
-      call("frappe.client.get_count", { doctype: "Plot" }),
-      call("frappe.client.get_count", { doctype: "Work", filters: [["Work", "docstatus", "=", 1]] }),
-      call("frappe.client.get_count", { doctype: "Labor Child" }),
-      call("frappe.client.get_count", { doctype: "Equipment Child" }),
-      call("frappe.client.get_count", { doctype: "Material Child" }),
-      call("frappe.desk.doctype.dashboard_chart.dashboard_chart.get", { chart_name: "Invoice Status" }),
-      call("frappe.desk.doctype.dashboard_chart.dashboard_chart.get", { chart_name: "Total Works" }),
-      call("frappe.desk.query_report.run", { report_name: "Low Balance Plots", filters: {} }),
-    ])
+  const [plotCount, workCount, invoiceStatusChart, worksTrendChart, lowBalance] = await Promise.all([
+    call("frappe.client.get_count", { doctype: "Plot" }),
+    call("frappe.client.get_count", { doctype: "Work", filters: [["Work", "docstatus", "=", 1]] }),
+    call("frappe.desk.doctype.dashboard_chart.dashboard_chart.get", { chart_name: "Invoice Status" }),
+    call("frappe.desk.doctype.dashboard_chart.dashboard_chart.get", { chart_name: "Total Works" }),
+    call("frappe.desk.query_report.run", { report_name: "Low Balance Plots", filters: {} }),
+  ])
 
   const invoiceStatus = chartToSeries(invoiceStatusChart).map((s) => ({
     label: s.label,
@@ -46,7 +42,6 @@ export async function fetchDashboardData() {
   return {
     plotCount,
     workCount,
-    lineItemCount: (laborCount || 0) + (equipmentCount || 0) + (materialCount || 0),
     invoicedTotal: invoiceStatus.reduce((t, s) => t + s.value, 0),
     invoiceStatus,
     worksTrend,
