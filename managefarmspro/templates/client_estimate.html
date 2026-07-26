@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			/* wkhtmltopdf (QtWebKit 4.8) does not reliably render flexbox —
+			   verified directly: justify-content/gap silently collapse, which is
+			   exactly what caused "CategoryMiyawaki Plantation" (no space)
+			   elsewhere. Every label/value and column layout below uses plain
+			   tables instead — the one layout primitive wkhtmltopdf renders
+			   correctly every time. */
+			body {
+				font-family: Arial, sans-serif;
+				color: #333;
+			}
+			.main-container {
+				padding: 20px;
+			}
+			.header-table {
+				width: 100%;
+				border-collapse: collapse;
+				border-bottom: 2px solid #2f5233;
+				padding-bottom: 15px;
+				margin-bottom: 20px;
+			}
+			.header-table td { vertical-align: top; padding-bottom: 15px; }
+			.header-table .company h2 { margin: 0; color: #2f5233; }
+			.header-table .company p { margin: 0; font-size: 12px; }
+			.header-table .logo { width: 110px; text-align: right; }
+			.header-table .logo img { width: 100px; }
+			.header-table .doc-meta { width: 170px; text-align: right; font-size: 12px; }
+			.header-table .doc-meta .doc-title { font-size: 18px; font-weight: bold; color: #333; margin: 0 0 4px 0; }
+			.to-project-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
+			.to-project-table td { vertical-align: top; width: 50%; }
+			.label { text-transform: uppercase; font-size: 11px; font-weight: bold; color: #666; margin-bottom: 4px; }
+			.kv-table { width: 100%; border-collapse: collapse; }
+			.kv-table td { padding: 1px 0; }
+			.kv-table td.v { text-align: right; }
+			.summary-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+			.summary-table th, .summary-table td { border: 1px solid #ddd; padding: 8px 10px; }
+			.summary-table th { background-color: #2f5233; color: #fff; text-align: left; }
+			.summary-table td.amount, .summary-table th.amount { text-align: right; }
+			.summary-table tfoot td { border-top: 2px solid #333; font-weight: bold; }
+			.grand-total-table { width: 100%; border-collapse: collapse; background-color: #2f5233; margin: 20px 0; }
+			.grand-total-table td { color: #fff; padding: 15px; }
+			.grand-total-table .label-cell { font-size: 16px; font-weight: bold; }
+			.grand-total-table .value-cell { font-size: 22px; font-weight: bold; text-align: right; }
+			.grand-total-table .words-cell { font-size: 11px; font-style: italic; opacity: 0.85; padding-top: 0; }
+			.terms { font-size: 11px; color: #555; margin-top: 20px; }
+			.terms p { margin: 2px 0; }
+			.signatures-table { width: 100%; border-collapse: collapse; margin-top: 40px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 12px; }
+			.signatures-table td { width: 50%; vertical-align: top; padding-top: 15px; }
+			.sig-line { border-top: 1px solid #333; padding-top: 4px; margin-top: 40px; color: #666; font-size: 11px; }
+		</style>
+	</head>
+	<body>
+		<div class="main-container">
+			<table class="header-table">
+				<tr>
+					<td class="company">
+						<h2>Philosan Farm Management LLP</h2>
+						<p>VP 8/698A, Kolakkattu, House, Edappal, Kerala, India</p>
+						<p>Phone: +91 7441117052</p>
+						<p>Email: shihabkv22008@gmail.com</p>
+					</td>
+					<td class="logo"><img src="/files/philosan-logo.png" alt="Philosan" /></td>
+					<td class="doc-meta">
+						<p class="doc-title">ESTIMATE</p>
+						<p>Ref: {{ doc.name }}</p>
+						<p>Date: {{ today }}</p>
+					</td>
+				</tr>
+			</table>
+
+			<table class="to-project-table">
+				<tr>
+					<td>
+						<div class="label">To</div>
+						<div><strong>{{ doc.customer or doc.client_name or "-" }}</strong></div>
+						<div>{{ doc.location or "" }}</div>
+					</td>
+					<td>
+						<div class="label">Project</div>
+						<table class="kv-table">
+							<tr><td>Category</td><td class="v">{{ doc.category or "-" }}</td></tr>
+							<tr><td>Area</td><td class="v">{{ fmt_num(doc.area_value) }} {{ doc.area_unit }}</td></tr>
+							<tr><td>Duration</td><td class="v">{{ doc.duration or "-" }}</td></tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+
+			<table class="summary-table">
+				<thead>
+					<tr><th>Description</th><th class="amount">Amount</th></tr>
+				</thead>
+				<tbody>
+					{% for section in sections %}
+					<tr><td>{{ section.name }}</td><td class="amount">₹{{ "{:,.0f}".format(section.subtotal) }}</td></tr>
+					{% endfor %}
+					{% for comp in doc.cost_components %}
+					<tr><td>{{ comp.component_name }}</td><td class="amount">₹{{ "{:,.0f}".format(comp.amount) }}</td></tr>
+					{% endfor %}
+				</tbody>
+				<tfoot>
+					<tr><td>Sub-Total</td><td class="amount">₹{{ "{:,.0f}".format(doc.subtotal_before_tax) }}</td></tr>
+					<tr><td>GST ({{ fmt_num(doc.tax_percent) }}%)</td><td class="amount">₹{{ "{:,.0f}".format(doc.grand_total - doc.subtotal_before_tax) }}</td></tr>
+				</tfoot>
+			</table>
+
+			<table class="grand-total-table">
+				<tr>
+					<td class="label-cell">Grand Total</td>
+					<td class="value-cell">₹{{ "{:,.0f}".format(doc.grand_total) }}</td>
+				</tr>
+				<tr>
+					<td class="words-cell" colspan="2">{{ frappe.utils.money_in_words(doc.grand_total) }}</td>
+				</tr>
+			</table>
+
+			<div class="terms">
+				<p><strong>Terms &amp; Conditions</strong></p>
+				<p>1. This estimate is valid for 30 days from the date of issue.</p>
+				<p>2. Payment terms: 50% advance, 40% at mid-stage, 10% on completion.</p>
+				<p>3. Prices are subject to change based on site conditions observed during execution.</p>
+				<p>4. GST at {{ fmt_num(doc.tax_percent) }}% is applicable on all supplies and services.</p>
+			</div>
+
+			<table class="signatures-table">
+				<tr>
+					<td>
+						<div>For Philosan Farm Management LLP</div>
+						<div class="sig-line">Authorised Signatory</div>
+					</td>
+					<td>
+						<div>Accepted by Client</div>
+						<div class="sig-line">{{ doc.customer or doc.client_name or "-" }} &middot; Date: __________</div>
+					</td>
+				</tr>
+			</table>
+		</div>
+	</body>
+</html>

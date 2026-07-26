@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			/* Table-based layout throughout — see client_estimate.html for why
+			   (wkhtmltopdf doesn't render flexbox spacing reliably). */
+			body {
+				font-family: Arial, sans-serif;
+				color: #333;
+			}
+			.main-container {
+				padding: 20px;
+			}
+			.header-table {
+				width: 100%;
+				border-collapse: collapse;
+				border-bottom: 2px solid #2f5233;
+				padding-bottom: 15px;
+				margin-bottom: 20px;
+			}
+			.header-table td { vertical-align: top; padding-bottom: 15px; }
+			.header-table .company h3 { margin: 0; color: #2f5233; }
+			.header-table .company p { margin: 0; font-size: 11px; }
+			.header-table .logo { width: 100px; text-align: right; }
+			.header-table .logo img { width: 90px; }
+			.header-table .doc-meta { width: 160px; text-align: right; font-size: 11px; }
+			.header-table .doc-meta .doc-title { font-weight: bold; color: #333; margin: 0; font-size: 13px; }
+			.section-block { margin-bottom: 18px; page-break-inside: avoid; }
+			.section-title-table { width: 100%; border-collapse: collapse; background-color: #f0f0f0; border-radius: 3px 3px 0 0; }
+			.section-title-table td { padding: 6px 10px; font-weight: bold; }
+			.section-title-table td.amt { text-align: right; }
+			.line-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+			.line-table th, .line-table td { border: 1px solid #ddd; padding: 6px 8px; }
+			.line-table th { background-color: #fafafa; text-align: left; }
+			.line-table .col-desc { width: 40%; }
+			.line-table .col-qty, .line-table .col-rate, .line-table .col-amount { width: 15%; text-align: right; }
+			.line-table .col-unit { width: 15%; }
+			.line-table .discount-row td { color: #b45309; font-size: 11px; text-align: right; }
+			.totals-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+			.totals-table td { border: 1px solid #ddd; padding: 8px 10px; }
+			.totals-table td.amount { text-align: right; }
+			.totals-table .grand { background-color: #2f5233; color: #fff; font-weight: bold; font-size: 16px; }
+		</style>
+	</head>
+	<body>
+		<div class="main-container">
+			<table class="header-table">
+				<tr>
+					<td class="company">
+						<h3>Philosan Farm Management LLP</h3>
+						<p>VP 8/698A, Kolakkattu, House, Edappal, Kerala, India</p>
+						<p>Phone: +91 7441117052 &middot; Email: shihabkv22008@gmail.com</p>
+						<p>Bill of Quantities</p>
+					</td>
+					<td class="logo"><img src="/files/philosan-logo.png" alt="Philosan" /></td>
+					<td class="doc-meta">
+						<p class="doc-title">{{ doc.name }}</p>
+						<p>{{ doc.customer or doc.client_name or "-" }}</p>
+						<p>{{ today }}</p>
+					</td>
+				</tr>
+			</table>
+
+			{% for section in sections %}
+			<div class="section-block">
+				<table class="section-title-table">
+					<tr><td>{{ section.name }}</td><td class="amt">₹{{ "{:,.0f}".format(section.subtotal) }}</td></tr>
+				</table>
+				<table class="line-table">
+					<thead>
+						<tr>
+							<th class="col-desc">Description</th>
+							<th class="col-qty">Qty</th>
+							<th class="col-unit">Unit</th>
+							<th class="col-rate">Rate</th>
+							<th class="col-amount">Amount</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for line in section.lines %}
+						<tr>
+							<td class="col-desc">{{ line.description }}</td>
+							<td class="col-qty">{{ fmt_num(line.quantity) }}</td>
+							<td class="col-unit">{{ line.uom }}</td>
+							<td class="col-rate">₹{{ "{:,.0f}".format(line.rate or 0) }}</td>
+							<td class="col-amount">₹{{ "{:,.0f}".format(line.amount or 0) }}</td>
+						</tr>
+						{% endfor %}
+						{% if section.discount %}
+						<tr class="discount-row">
+							<td colspan="4">Section discount ({{ fmt_num(section.discount) }}%)</td>
+							<td>&minus;₹{{ "{:,.0f}".format(section.discount_amount) }}</td>
+						</tr>
+						{% endif %}
+					</tbody>
+				</table>
+			</div>
+			{% endfor %}
+
+			<table class="totals-table">
+				<tr><td>Cost Subtotal</td><td class="amount">₹{{ "{:,.0f}".format(doc.cost_subtotal) }}</td></tr>
+				{% for comp in doc.cost_components %}
+				<tr><td>{{ comp.component_name }}</td><td class="amount">₹{{ "{:,.0f}".format(comp.amount) }}</td></tr>
+				{% endfor %}
+				<tr><td>GST ({{ fmt_num(doc.tax_percent) }}%)</td><td class="amount">₹{{ "{:,.0f}".format(doc.grand_total - doc.subtotal_before_tax) }}</td></tr>
+				<tr class="grand"><td>Grand Total</td><td class="amount">₹{{ "{:,.0f}".format(doc.grand_total) }}</td></tr>
+			</table>
+		</div>
+	</body>
+</html>

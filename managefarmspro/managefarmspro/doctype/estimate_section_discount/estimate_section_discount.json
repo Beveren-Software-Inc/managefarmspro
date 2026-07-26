@@ -1,0 +1,39 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-07-26 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "section",
+  "discount_percent"
+ ],
+ "fields": [
+  {
+   "fieldname": "section",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Section"
+  },
+  {
+   "fieldname": "discount_percent",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Discount %",
+   "precision": "2"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-26 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Managefarmspro",
+ "name": "Estimate Section Discount",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

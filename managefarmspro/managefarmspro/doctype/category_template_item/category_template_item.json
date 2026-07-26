@@ -1,0 +1,82 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-07-25 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item",
+  "line_type",
+  "description",
+  "consumption_basis",
+  "consumption_rate",
+  "uom",
+  "is_manual"
+ ],
+ "fields": [
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item"
+  },
+  {
+   "description": "What this line becomes when copied onto an Estimate's line items",
+   "fieldname": "line_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type",
+   "options": "Material\nLabour\nMachinery\nManual\nOverhead"
+  },
+  {
+   "description": "Label shown when this is a manual placeholder line with no linked Item (e.g. \"Design and Layout\")",
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Description"
+  },
+  {
+   "fieldname": "consumption_basis",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Consumption Basis",
+   "options": "Per Plant\nPer Pit\nPer Sqft\nPer Running Foot\nFixed Quantity"
+  },
+  {
+   "fieldname": "consumption_rate",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Consumption Rate",
+   "precision": "3"
+  },
+  {
+   "fetch_from": "item.stock_uom",
+   "fieldname": "uom",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "UOM"
+  },
+  {
+   "default": "0",
+   "description": "No formula behind this line — a placeholder that always needs a manual value (e.g. Design & Layout)",
+   "fieldname": "is_manual",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Manual (no formula)"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-25 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Managefarmspro",
+ "name": "Category Template Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

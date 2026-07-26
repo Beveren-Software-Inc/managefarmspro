@@ -19,6 +19,12 @@ const styleMap = {
   Inactive: "bg-surface-muted text-muted",
   "Under Maintenance": "bg-warning-soft text-warning",
   "Under Development": "bg-info-soft text-info",
+  // Estimate statuses — computed display labels (docstatus + linked Farm
+  // Project), not stored values. "Draft"/"Cancelled" above are shared with
+  // Work's own statuses.
+  "Not Created": "bg-surface-muted text-muted",
+  Approved: "bg-positive-soft text-positive",
+  "Converted to Project": "bg-primary-soft text-primary",
 }
 
 const cls = computed(() => styleMap[props.status] || "bg-surface-muted text-muted")

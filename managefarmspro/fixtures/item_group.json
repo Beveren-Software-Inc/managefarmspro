@@ -1,0 +1,54 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Item Group",
+  "image": null,
+  "is_group": 0,
+  "item_group_defaults": [],
+  "item_group_name": "Plants",
+  "modified": "2026-07-25 18:04:09.743677",
+  "name": "Plants",
+  "old_parent": "All Item Groups",
+  "parent_item_group": "All Item Groups",
+  "taxes": []
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Item Group",
+  "image": null,
+  "is_group": 0,
+  "item_group_defaults": [],
+  "item_group_name": "Manure & Inputs",
+  "modified": "2026-07-25 18:04:10.112010",
+  "name": "Manure & Inputs",
+  "old_parent": "All Item Groups",
+  "parent_item_group": "All Item Groups",
+  "taxes": []
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Item Group",
+  "image": null,
+  "is_group": 0,
+  "item_group_defaults": [],
+  "item_group_name": "Irrigation Materials",
+  "modified": "2026-07-25 18:04:10.522886",
+  "name": "Irrigation Materials",
+  "old_parent": "All Item Groups",
+  "parent_item_group": "All Item Groups",
+  "taxes": []
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Item Group",
+  "image": null,
+  "is_group": 0,
+  "item_group_defaults": [],
+  "item_group_name": "Structure Materials",
+  "modified": "2026-07-25 18:04:10.925415",
+  "name": "Structure Materials",
+  "old_parent": "All Item Groups",
+  "parent_item_group": "All Item Groups",
+  "taxes": []
+ }
+]

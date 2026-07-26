@@ -65,3 +65,29 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #c2beb1;
 }
+
+/* App shell never belongs in a printed page — first real print use is the
+   Estimate Documents preview, but hiding the sidebar/topbar is correct for
+   any future page that adds its own print styles too.
+   The real cause of content getting cut off on print: `aside` going
+   display:none removes the sidebar, but `.app-content`'s lg:pl-64 (reserved
+   to offset the *fixed*-position sidebar) and `main`'s own px/py padding
+   both stay applied regardless — together they were eating a large chunk of
+   a printed page's usable width before any document content even starts,
+   pushing wider tables past the page edge. Both must be zeroed on print,
+   not just the sidebar itself. */
+@media print {
+  aside,
+  header {
+    display: none !important;
+  }
+  .app-content {
+    padding-left: 0 !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  @page {
+    margin: 12mm;
+  }
+}

@@ -1,0 +1,58 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-07-26 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "component_name",
+  "charge_type",
+  "value",
+  "amount"
+ ],
+ "fields": [
+  {
+   "description": "Supervision, Consultation, and any other named project-level charge — free text, new components need no schema change",
+   "fieldname": "component_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Component"
+  },
+  {
+   "fieldname": "charge_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type",
+   "options": "Fixed\nPercent"
+  },
+  {
+   "description": "Currency amount if Fixed, percentage if Percent",
+   "fieldname": "value",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Value",
+   "precision": "2"
+  },
+  {
+   "description": "Computed amount (Fixed value, or Percent x Cost Subtotal)",
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-26 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Managefarmspro",
+ "name": "Project Cost Component",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

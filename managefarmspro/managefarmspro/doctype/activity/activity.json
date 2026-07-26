@@ -1,0 +1,100 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "field:activity_name",
+ "creation": "2026-07-25 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "activity_name",
+  "unit",
+  "labour_type",
+  "column_break_1",
+  "standard_output",
+  "standard_duration",
+  "section_break_1",
+  "labour_days_formula",
+  "machinery_requirement"
+ ],
+ "fields": [
+  {
+   "fieldname": "activity_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Activity Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "unit",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Unit"
+  },
+  {
+   "description": "Free text — e.g. Lady Labour, Gents Labour, Skilled, Unskilled. Descriptive only, not used in cost calculations.",
+   "fieldname": "labour_type",
+   "fieldtype": "Data",
+   "label": "Labour Type"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Standard productivity per labour per day",
+   "fieldname": "standard_output",
+   "fieldtype": "Float",
+   "label": "Standard Output"
+  },
+  {
+   "fieldname": "standard_duration",
+   "fieldtype": "Data",
+   "label": "Standard Duration"
+  },
+  {
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "How Labour Days is derived from this activity's Standard Output — e.g. Total Quantity / Standard Output",
+   "fieldname": "labour_days_formula",
+   "fieldtype": "Small Text",
+   "label": "Labour Days Formula"
+  },
+  {
+   "fieldname": "machinery_requirement",
+   "fieldtype": "Link",
+   "label": "Machinery Requirement",
+   "options": "Machinery"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-25 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Managefarmspro",
+ "name": "Activity",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "activity_name",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "activity_name"
+}

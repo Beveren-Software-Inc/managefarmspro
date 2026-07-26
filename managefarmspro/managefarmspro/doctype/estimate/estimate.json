@@ -1,0 +1,243 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "EST-.YYYY.-.#####",
+ "creation": "2026-07-26 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "is_submittable": 1,
+ "field_order": [
+  "amended_from",
+  "section_break_client",
+  "customer",
+  "client_name",
+  "column_break_client",
+  "plot",
+  "location",
+  "section_break_project",
+  "category",
+  "duration",
+  "column_break_project",
+  "area_value",
+  "area_unit",
+  "area_sqft",
+  "section_break_lines",
+  "line_items",
+  "section_discounts",
+  "section_break_costing",
+  "cost_components",
+  "column_break_costing",
+  "profit_type",
+  "profit_value",
+  "tax_percent",
+  "section_break_totals",
+  "cost_subtotal",
+  "subtotal_before_profit",
+  "column_break_totals",
+  "subtotal_before_tax",
+  "grand_total"
+ ],
+ "fields": [
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Estimate",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_break_client",
+   "fieldtype": "Section Break",
+   "label": "Client"
+  },
+  {
+   "description": "Left blank until Approved, unless an existing Customer is linked manually",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "description": "Free text for prospects with no Customer record yet",
+   "fieldname": "client_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Client Name"
+  },
+  {
+   "fieldname": "column_break_client",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Left blank until Approved, unless an existing Plot is linked manually (e.g. this project is on land already under maintenance)",
+   "fieldname": "plot",
+   "fieldtype": "Link",
+   "label": "Plot",
+   "options": "Plot"
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Data",
+   "label": "Location"
+  },
+  {
+   "fieldname": "section_break_project",
+   "fieldtype": "Section Break",
+   "label": "Project"
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Category",
+   "options": "Project Category"
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Data",
+   "label": "Duration"
+  },
+  {
+   "fieldname": "column_break_project",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "area_value",
+   "fieldtype": "Float",
+   "label": "Area Value",
+   "precision": "2"
+  },
+  {
+   "default": "Sqft",
+   "fieldname": "area_unit",
+   "fieldtype": "Select",
+   "label": "Area Unit",
+   "options": "Sqft\nCent\nAcre"
+  },
+  {
+   "fieldname": "area_sqft",
+   "fieldtype": "Float",
+   "label": "Area (Sqft)",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_lines",
+   "fieldtype": "Section Break",
+   "label": "Line Items"
+  },
+  {
+   "fieldname": "line_items",
+   "fieldtype": "Table",
+   "label": "Line Items",
+   "options": "Project Line Item"
+  },
+  {
+   "fieldname": "section_discounts",
+   "fieldtype": "Table",
+   "label": "Section Discounts",
+   "options": "Estimate Section Discount"
+  },
+  {
+   "fieldname": "section_break_costing",
+   "fieldtype": "Section Break",
+   "label": "Costing"
+  },
+  {
+   "fieldname": "cost_components",
+   "fieldtype": "Table",
+   "label": "Cost Components",
+   "options": "Project Cost Component"
+  },
+  {
+   "fieldname": "column_break_costing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Percent",
+   "fieldname": "profit_type",
+   "fieldtype": "Select",
+   "label": "Profit Type",
+   "options": "Fixed\nPercent"
+  },
+  {
+   "fieldname": "profit_value",
+   "fieldtype": "Float",
+   "label": "Profit Value",
+   "precision": "2"
+  },
+  {
+   "default": "18",
+   "fieldname": "tax_percent",
+   "fieldtype": "Float",
+   "label": "Tax %",
+   "precision": "2"
+  },
+  {
+   "fieldname": "section_break_totals",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "fieldname": "cost_subtotal",
+   "fieldtype": "Currency",
+   "label": "Cost Subtotal",
+   "read_only": 1
+  },
+  {
+   "fieldname": "subtotal_before_profit",
+   "fieldtype": "Currency",
+   "label": "Subtotal Before Profit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_totals",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "subtotal_before_tax",
+   "fieldtype": "Currency",
+   "label": "Subtotal Before Tax",
+   "read_only": 1
+  },
+  {
+   "bold": 1,
+   "fieldname": "grand_total",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Grand Total",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-26 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Managefarmspro",
+ "name": "Estimate",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "client_name,customer,category",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "client_name"
+}

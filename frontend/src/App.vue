@@ -17,7 +17,7 @@ const mobileOpen = ref(false)
 
     <AppSidebar :mobile-open="mobileOpen" @close="mobileOpen = false" />
 
-    <div class="flex-1 flex flex-col min-w-0 lg:pl-64">
+    <div class="app-content flex-1 flex flex-col min-w-0 lg:pl-64">
       <AppTopbar @toggle-menu="mobileOpen = !mobileOpen" />
       <main class="flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <router-view v-slot="{ Component }">

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			/* Table-based layout throughout — see client_estimate.html for why
+			   (wkhtmltopdf doesn't render flexbox spacing reliably). */
+			body {
+				font-family: Arial, sans-serif;
+				color: #333;
+			}
+			.main-container {
+				padding: 20px;
+			}
+			.confidential {
+				color: #b91c1c;
+				font-size: 11px;
+				font-weight: bold;
+				margin: 0 0 15px 0;
+				text-transform: uppercase;
+			}
+			.header-table { width: 100%; border-collapse: collapse; border-bottom: 2px solid #b91c1c; padding-bottom: 12px; margin-bottom: 15px; }
+			.header-table td { vertical-align: top; padding-bottom: 12px; }
+			.header-table h3 { margin: 0; color: #333; }
+			.header-table .doc-meta { text-align: right; font-size: 12px; width: 160px; }
+			.info-table { width: 100%; border-collapse: separate; border-spacing: 8px 0; margin-bottom: 18px; font-size: 12px; }
+			.info-table td { background-color: #f5f5f5; border-radius: 4px; padding: 10px 12px; vertical-align: top; width: 50%; }
+			.info-table .label { color: #666; font-size: 11px; margin-bottom: 2px; }
+			.kv-table { width: 100%; border-collapse: collapse; }
+			.kv-table td { padding: 1px 0; }
+			.kv-table td.v { text-align: right; }
+			.section-block { margin-bottom: 18px; page-break-inside: avoid; }
+			.section-title { background-color: #f0f0f0; padding: 6px 10px; font-weight: bold; }
+			.line-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
+			.line-table th, .line-table td { border: 1px solid #ddd; padding: 5px 6px; }
+			.line-table th { background-color: #fafafa; text-align: left; }
+			.line-table .num { text-align: right; }
+			.line-table .internal-col { background-color: #fef2f2; color: #b91c1c; }
+			.line-table .margin-col { background-color: #f0fdf4; color: #15803d; }
+			.costing-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+			.costing-table td { border: 1px solid #ddd; padding: 8px 10px; }
+			.costing-table td.amount { text-align: right; }
+			.costing-table .internal-row { background-color: #fef2f2; color: #b91c1c; }
+			.costing-table .grand { background-color: #2f5233; color: #fff; font-weight: bold; font-size: 15px; }
+			.costing-table .margin-row { background-color: #f0fdf4; color: #15803d; font-weight: bold; }
+		</style>
+	</head>
+	<body>
+		<div class="main-container">
+			<p class="confidential">Confidential &mdash; Not for Client Distribution</p>
+			<table class="header-table">
+				<tr>
+					<td><h3>Internal Costing Sheet</h3></td>
+					<td class="doc-meta">
+						<p><strong>{{ doc.name }}</strong></p>
+						<p>{{ doc.docstatus == 2 and "Cancelled" or (doc.docstatus == 0 and "Draft") or (has_project and "Converted to Project") or "Approved" }}</p>
+					</td>
+				</tr>
+			</table>
+
+			<table class="info-table">
+				<tr>
+					<td>
+						<div class="label">Client</div>
+						<div><strong>{{ doc.customer or doc.client_name or "-" }}</strong></div>
+						<div>{{ doc.location or "" }}</div>
+					</td>
+					<td>
+						<table class="kv-table">
+							<tr><td>Category</td><td class="v">{{ doc.category or "-" }}</td></tr>
+							<tr><td>Area</td><td class="v">{{ fmt_num(doc.area_value) }} {{ doc.area_unit }}</td></tr>
+							<tr><td>Profit</td><td class="v">{{ doc.profit_type == "Percent" and (fmt_num(doc.profit_value) ~ "%") or ("₹" ~ "{:,.0f}".format(doc.profit_value or 0)) }}</td></tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+
+			{% for section in sections %}
+			<div class="section-block">
+				<div class="section-title">{{ section.name }}</div>
+				<table class="line-table">
+					<thead>
+						<tr>
+							<th>Description</th>
+							<th class="num">Qty</th>
+							<th>Unit</th>
+							<th class="num">Client Rate</th>
+							<th class="num">Client Amt</th>
+							<th class="num internal-col">Int. Rate</th>
+							<th class="num internal-col">Int. Amt</th>
+							<th class="num margin-col">Margin</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for line in section.lines %}
+						<tr>
+							<td>{{ line.description }}</td>
+							<td class="num">{{ fmt_num(line.quantity) }}</td>
+							<td>{{ line.uom }}</td>
+							<td class="num">₹{{ "{:,.0f}".format(line.rate or 0) }}</td>
+							<td class="num">₹{{ "{:,.0f}".format(line.amount or 0) }}</td>
+							<td class="num internal-col">₹{{ "{:,.0f}".format(line.internal_rate or 0) }}</td>
+							<td class="num internal-col">₹{{ "{:,.0f}".format((line.quantity or 0) * (line.internal_rate or 0)) }}</td>
+							<td class="num margin-col">₹{{ "{:,.0f}".format((line.amount or 0) - (line.quantity or 0) * (line.internal_rate or 0)) }}</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+			{% endfor %}
+
+			<table class="costing-table">
+				<tr><td>Cost Subtotal</td><td class="amount">₹{{ "{:,.0f}".format(doc.cost_subtotal) }}</td></tr>
+				<tr class="internal-row"><td>Total Internal Cost</td><td class="amount">₹{{ "{:,.0f}".format(internal_total) }}</td></tr>
+				{% for comp in doc.cost_components %}
+				<tr><td>{{ comp.component_name }}</td><td class="amount">₹{{ "{:,.0f}".format(comp.amount) }}</td></tr>
+				{% endfor %}
+				<tr><td>Subtotal Before Profit</td><td class="amount">₹{{ "{:,.0f}".format(doc.subtotal_before_profit) }}</td></tr>
+				<tr><td>Profit</td><td class="amount">₹{{ "{:,.0f}".format(doc.subtotal_before_tax - doc.subtotal_before_profit) }}</td></tr>
+				<tr><td>GST ({{ fmt_num(doc.tax_percent) }}%)</td><td class="amount">₹{{ "{:,.0f}".format(doc.grand_total - doc.subtotal_before_tax) }}</td></tr>
+				<tr class="grand"><td>Grand Total</td><td class="amount">₹{{ "{:,.0f}".format(doc.grand_total) }}</td></tr>
+				<tr class="margin-row"><td>Gross Margin</td><td class="amount">₹{{ "{:,.0f}".format(margin_value) }} ({{ margin_pct }}%)</td></tr>
+			</table>
+		</div>
+	</body>
+</html>

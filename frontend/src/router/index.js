@@ -10,6 +10,12 @@ import InvoiceHistoryView from "@/views/InvoiceHistoryView.vue"
 import WorkListView from "@/views/WorkListView.vue"
 import WorkDetailView from "@/views/WorkDetailView.vue"
 import WorkEntryView from "@/views/WorkEntryView.vue"
+import CategoryTemplateListView from "@/views/CategoryTemplateListView.vue"
+import CategoryTemplateEditorView from "@/views/CategoryTemplateEditorView.vue"
+import EstimateListView from "@/views/EstimateListView.vue"
+import EstimateSetupView from "@/views/EstimateSetupView.vue"
+import EstimateBuilderView from "@/views/EstimateBuilderView.vue"
+import EstimateOutputView from "@/views/EstimateOutputView.vue"
 
 function stub(label, title) {
   return { component: ComingSoonView, props: { screen: label }, meta: { title } }
@@ -35,6 +41,23 @@ const routes = [
     name: "invoice-generate",
     component: GenerateInvoiceView,
     meta: { title: "Generate Invoice" },
+  },
+  { path: "/estimates", name: "estimates", component: EstimateListView, meta: { title: "Estimates" } },
+  { path: "/estimates/new", name: "estimate-new", component: EstimateSetupView, meta: { title: "New Estimate" } },
+  { path: "/estimates/:id", name: "estimate-detail", component: EstimateBuilderView, meta: { title: "Estimate" } },
+  { path: "/estimates/:id/edit", name: "estimate-edit", component: EstimateSetupView, meta: { title: "Edit Estimate" } },
+  { path: "/estimates/:id/output", name: "estimate-output", component: EstimateOutputView, meta: { title: "Estimate Documents" } },
+  {
+    path: "/category-templates",
+    name: "category-templates",
+    component: CategoryTemplateListView,
+    meta: { title: "Category Templates" },
+  },
+  {
+    path: "/category-templates/:id",
+    name: "category-template-detail",
+    component: CategoryTemplateEditorView,
+    meta: { title: "Category Template" },
   },
 ]
 

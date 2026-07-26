@@ -1,0 +1,128 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "field:category_name",
+ "creation": "2026-07-25 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "category_name",
+  "description",
+  "section_break_defaults",
+  "default_row_spacing",
+  "default_plant_spacing",
+  "default_pit_size",
+  "column_break_defaults",
+  "default_supervision_type",
+  "default_supervision_value",
+  "section_break_items",
+  "items",
+  "section_break_activities",
+  "activities"
+ ],
+ "fields": [
+  {
+   "fieldname": "category_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Category Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "section_break_defaults",
+   "fieldtype": "Section Break",
+   "label": "Defaults"
+  },
+  {
+   "fieldname": "default_row_spacing",
+   "fieldtype": "Float",
+   "label": "Default Row Spacing (m)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "default_plant_spacing",
+   "fieldtype": "Float",
+   "label": "Default Plant Spacing (m)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "default_pit_size",
+   "fieldtype": "Data",
+   "label": "Default Pit Size"
+  },
+  {
+   "fieldname": "column_break_defaults",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Percent",
+   "fieldname": "default_supervision_type",
+   "fieldtype": "Select",
+   "label": "Default Supervision Type",
+   "options": "Fixed\nPercent"
+  },
+  {
+   "description": "Currency amount if Fixed, percentage if Percent",
+   "fieldname": "default_supervision_value",
+   "fieldtype": "Float",
+   "label": "Default Supervision Value",
+   "precision": "2"
+  },
+  {
+   "fieldname": "section_break_items",
+   "fieldtype": "Section Break",
+   "label": "Standard Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Standard Items",
+   "options": "Category Template Item"
+  },
+  {
+   "fieldname": "section_break_activities",
+   "fieldtype": "Section Break",
+   "label": "Standard Activities"
+  },
+  {
+   "fieldname": "activities",
+   "fieldtype": "Table",
+   "label": "Standard Activities",
+   "options": "Category Template Activity"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-25 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Managefarmspro",
+ "name": "Project Category",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "category_name",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "category_name"
+}

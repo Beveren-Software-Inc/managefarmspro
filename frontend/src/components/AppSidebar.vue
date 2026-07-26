@@ -10,9 +10,12 @@ const nav = [
   { to: "/owners", label: "Customers", icon: "users" },
   { to: "/plots", label: "Plots", icon: "plot" },
   { to: "/works", label: "Works", icon: "work" },
+  { to: "/estimates", label: "Estimates", icon: "estimate" },
   { to: "/invoices/generate", label: "Generate Invoice", icon: "invoice" },
   { to: "/invoices", label: "Invoice History", icon: "file" },
 ]
+
+const adminNav = [{ to: "/category-templates", label: "Category Templates", icon: "template" }]
 </script>
 
 <template>
@@ -52,6 +55,31 @@ const nav = [
           {{ item.label }}
         </a>
       </router-link>
+
+      <div class="pt-3 mt-2 border-t border-white/10">
+        <p class="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground/40">Admin</p>
+        <router-link
+          v-for="item in adminNav"
+          :key="item.to"
+          :to="item.to"
+          custom
+          v-slot="{ href, navigate, isActive }"
+        >
+          <a
+            :href="href"
+            @click="(e) => { navigate(e); $emit('close') }"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
+            :class="
+              isActive
+                ? 'bg-primary-foreground/15 text-primary-foreground'
+                : 'text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground'
+            "
+          >
+            <AppIcon :name="item.icon" :size="19" />
+            {{ item.label }}
+          </a>
+        </router-link>
+      </div>
     </nav>
 
     <div class="p-3">

@@ -1,0 +1,105 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-07-26 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "section",
+  "line_type",
+  "source_item",
+  "description",
+  "quantity",
+  "uom",
+  "rate",
+  "internal_rate",
+  "amount",
+  "is_override",
+  "is_manual"
+ ],
+ "fields": [
+  {
+   "description": "Free text, not a fixed list — real BOQs group/nest sections differently project to project",
+   "fieldname": "section",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Section"
+  },
+  {
+   "fieldname": "line_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type",
+   "options": "Material\nLabour\nMachinery\nManual\nOverhead"
+  },
+  {
+   "fieldname": "source_item",
+   "fieldtype": "Link",
+   "label": "Item",
+   "options": "Item"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Description"
+  },
+  {
+   "fieldname": "quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Quantity",
+   "precision": "3"
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Data",
+   "label": "UOM"
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate"
+  },
+  {
+   "description": "Company's own cost basis for this line — internal only, never shown on client-facing BOQ/Quotation",
+   "fieldname": "internal_rate",
+   "fieldtype": "Currency",
+   "label": "Internal Rate"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Diverged from the category template's default when this line was copied in",
+   "fieldname": "is_override",
+   "fieldtype": "Check",
+   "label": "Override"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_manual",
+   "fieldtype": "Check",
+   "label": "Manual (no formula)"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-26 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Managefarmspro",
+ "name": "Project Line Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

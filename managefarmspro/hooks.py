@@ -61,6 +61,15 @@ website_redirects = [{"source": "/app/home", "target": "/app/managefarmspro"}]
 # same www page on refresh/deep-link.
 website_route_rules = [{"from_route": "/farmpro/<path:app_path>", "to_route": "farmpro"}]
 
+# Estimate/BOQ Material Master — new Item Groups, so fresh installs get them
+# too instead of relying on this site's one-off manual insert.
+fixtures = [
+	{
+		"doctype": "Item Group",
+		"filters": [["name", "in", ["Plants", "Manure & Inputs", "Irrigation Materials", "Structure Materials"]]],
+	}
+]
+
 
 # Generators
 # ----------
