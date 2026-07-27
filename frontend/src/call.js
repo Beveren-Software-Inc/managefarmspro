@@ -16,7 +16,28 @@ export async function call(method, args = {}) {
   const body = await res.json().catch(() => ({}))
 
   if (!res.ok) {
-    const messages = body._server_messages ? JSON.parse(body._server_messages) : []
+    // _server_messages is JSON-encoded TWICE over the wire — a JSON array
+    // whose entries are themselves JSON-encoded `{message, title, indicator}`
+    // objects (Frappe's own frappe.msgprint wire format). Parsing only the
+    // outer layer leaves raw `{"message": "...", ...}` strings as the
+    // "error message" shown to the user — confirmed live, this was exactly
+    // what surfaced as a raw JSON dump for a real duplicate-customer error.
+    let messages = []
+    if (body._server_messages) {
+      try {
+        messages = JSON.parse(body._server_messages)
+          .map((m) => {
+            try {
+              return JSON.parse(m).message
+            } catch {
+              return m
+            }
+          })
+          .filter(Boolean)
+      } catch {
+        messages = []
+      }
+    }
     const error = new Error(body.exception || body._error_message || res.statusText)
     error.messages = messages.length ? messages : [body._error_message || res.statusText]
     throw error

@@ -55,7 +55,8 @@
    "label": "Client"
   },
   {
-   "description": "Left blank until Approved, unless an existing Customer is linked manually",
+   "allow_on_submit": 1,
+   "description": "Blank until linked — via the Approve-time convenience, any time after, or required at Convert-to-Project",
    "fieldname": "customer",
    "fieldtype": "Link",
    "label": "Customer",
@@ -73,7 +74,8 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "Left blank until Approved, unless an existing Plot is linked manually (e.g. this project is on land already under maintenance)",
+   "allow_on_submit": 1,
+   "description": "Blank until linked manually (e.g. this project is on land already under maintenance) — required at Convert-to-Project",
    "fieldname": "plot",
    "fieldtype": "Link",
    "label": "Plot",

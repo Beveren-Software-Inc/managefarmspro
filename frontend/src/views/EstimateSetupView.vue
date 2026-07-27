@@ -456,7 +456,7 @@ async function goNext() {
 
           <div class="flex items-start gap-2.5 p-3.5 rounded-xl bg-info-soft border border-info/15 text-xs text-info leading-relaxed">
             <AppIcon name="info" :size="14" class="flex-shrink-0 mt-0.5" />
-            <span>When this estimate is approved, a Customer record and a Plot will be automatically created from these prospect details — only if you haven't linked existing ones yourself.</span>
+            <span>Nothing is created automatically. You can link or create a Customer when you approve this estimate, or any time after — it's required before converting to a Project.</span>
           </div>
         </div>
       </div>

@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
 import StatusBadge from "@/components/StatusBadge.vue"
-import { fetchEstimateDetail, fetchLinkedProject, estimateStatusLabel, areaLabel, downloadEstimatePdf } from "@/data/estimates.js"
+import { fetchEstimateWithProject, estimateStatusLabel, areaLabel, downloadEstimatePdf } from "@/data/estimates.js"
 import { formatCurrency, formatDate } from "@/format.js"
 
 const route = useRoute()
@@ -16,7 +16,7 @@ const linkedProject = ref(null)
 
 onMounted(async () => {
   try {
-    const [d, project] = await Promise.all([fetchEstimateDetail(route.params.id), fetchLinkedProject(route.params.id)])
+    const { doc: d, linkedProject: project } = await fetchEstimateWithProject(route.params.id)
     doc.value = d
     linkedProject.value = project
   } catch (e) {

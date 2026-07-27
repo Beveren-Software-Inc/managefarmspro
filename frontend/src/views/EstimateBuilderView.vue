@@ -4,18 +4,23 @@ import { useRoute, useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
 import StatusBadge from "@/components/StatusBadge.vue"
 import ConfirmDialog from "@/components/ConfirmDialog.vue"
+import RecordPicker from "@/components/RecordPicker.vue"
 import {
-  fetchEstimateDetail,
-  fetchLinkedProject,
+  fetchEstimateWithProject,
   saveEstimate,
   createEstimate,
   approveEstimate,
   convertEstimateToProject,
+  linkCustomer,
+  linkPlot,
+  createPlot,
   amendEstimate,
   cancelEstimate,
   estimateStatusLabel,
   areaLabel,
 } from "@/data/estimates.js"
+import { fetchCustomers } from "@/data/customers.js"
+import { fetchPlotsForCustomer, fetchClusters } from "@/data/plots.js"
 import { estimateDraft, clearEstimateDraft } from "@/data/estimateDraft.js"
 import { LINE_TYPES, LINE_TYPE_ITEM_GROUPS, fetchAllItemOptions } from "@/data/category_templates.js"
 import { formatCurrency } from "@/format.js"
@@ -105,7 +110,7 @@ async function loadForRoute() {
       costComponents.splice(0, costComponents.length, ...estimateDraft.cost_components.map((c) => ({ ...c })))
       snapshotPristine()
     } else {
-      const [d, project] = await Promise.all([fetchEstimateDetail(route.params.id), fetchLinkedProject(route.params.id)])
+      const { doc: d, linkedProject: project } = await fetchEstimateWithProject(route.params.id)
       doc.value = d
       linkedProject.value = project
       loadIntoLocalState(doc.value)
@@ -211,6 +216,10 @@ const canAmend = computed(() => !isLocalMode.value && doc.value?.docstatus === 1
 // frappe/model/document.py), so this is Approved-only; and it needs the
 // same Farm-Project-link guard as Amend, for the same reason.
 const canCancel = computed(() => canAmend.value)
+// Standalone entry point into the same Link Customer/Plot modal Convert to
+// Project blocks on — reachable any time after Approve, not just when
+// attempting conversion.
+const needsLinking = computed(() => !isLocalMode.value && doc.value?.docstatus === 1 && (!doc.value?.customer || !doc.value?.plot))
 
 // Dirty-tracking, same pattern as Category Template Editor: snapshot right
 // after every load/save, compare live state against it. Not used to gate
@@ -382,8 +391,155 @@ const pendingAction = ref("") // 'approve' | 'convert'
 const transitioning = ref(false)
 const transitionError = ref(null)
 
+// ---- Link Customer / Plot — decoupled from Approve/Convert, called out to
+// explicitly (see estimates.js linkCustomer/linkPlot). Two entry points
+// share the same customer picker state: an optional checkbox inside the
+// Approve confirm dialog (a convenience — leaving it unchecked is a valid,
+// intentional "Approved, not yet linked" state), and a blocking modal in
+// front of Convert to Project (a hard requirement, enforced server-side
+// too — see convert_to_project). ----
+const allCustomers = ref([])
+const customerOptionsForLink = computed(() => allCustomers.value.map((c) => ({ value: c.name, label: c.customer_name })))
+async function ensureCustomersLoaded() {
+  if (!allCustomers.value.length) allCustomers.value = await fetchCustomers()
+}
+
+const linkOnApprove = ref(false)
+const approveCustomerMode = ref("existing") // 'existing' | 'new'
+const approveCustomerId = ref("")
+const approveNewCustomerName = ref("")
+const approveCustomerType = ref("Individual")
+const approveEmail = ref("")
+const approveMobile = ref("")
+const approveDuplicate = ref(null) // { message, existingCustomer } | null
+watch(linkOnApprove, (v) => {
+  if (v) ensureCustomersLoaded()
+})
+watch(approveCustomerMode, () => (approveDuplicate.value = null))
+
+const showLinkRequired = ref(false)
+const convertCustomerMode = ref("existing")
+const convertCustomerId = ref("")
+const convertNewCustomerName = ref("")
+const convertCustomerType = ref("Individual")
+const convertEmail = ref("")
+const convertMobile = ref("")
+const convertPlotMode = ref("existing") // 'existing' | 'new'
+const convertPlotId = ref("")
+const convertPlots = ref([])
+const newPlotName = ref("")
+const newPlotArea = ref(0)
+const newPlotUnit = ref("Cent")
+const newPlotCluster = ref("")
+const allClusters = ref([])
+const clusterOptionsForLink = computed(() => allClusters.value.map((c) => ({ value: c.name, label: c.cluster_name || c.name })))
+async function ensureClustersLoaded() {
+  if (!allClusters.value.length) allClusters.value = await fetchClusters()
+}
+const linking = ref(false)
+const linkError = ref(null)
+const convertDuplicate = ref(null)
+watch(convertCustomerId, async (id) => {
+  convertPlotId.value = ""
+  convertPlots.value = id ? await fetchPlotsForCustomer(id) : []
+})
+watch(convertCustomerMode, () => (convertDuplicate.value = null))
+
+// Plot.units options ("Sq.Ft") don't match Estimate.area_unit options
+// ("Sqft") — same concept, different literal strings on each doctype.
+const AREA_UNIT_TO_PLOT_UNIT = { Sqft: "Sq.Ft", Cent: "Cent", Acre: "Acre" }
+
+// One-click "use the existing customer instead" — the duplicate response
+// from linkCustomer carries the matching Customer's name, so this just
+// flips the mode and preselects it; the user clicks Link again to commit.
+function useDuplicateAsExisting(context) {
+  if (context === "approve") {
+    approveCustomerMode.value = "existing"
+    approveCustomerId.value = approveDuplicate.value.existingCustomer
+    approveDuplicate.value = null
+  } else {
+    convertCustomerMode.value = "existing"
+    convertCustomerId.value = convertDuplicate.value.existingCustomer
+    convertDuplicate.value = null
+  }
+}
+
+async function openLinkRequired() {
+  linkError.value = null
+  convertDuplicate.value = null
+  convertCustomerMode.value = "existing"
+  convertCustomerId.value = ""
+  convertNewCustomerName.value = doc.value?.client_name || ""
+  convertCustomerType.value = "Individual"
+  convertEmail.value = ""
+  convertMobile.value = ""
+  convertPlotMode.value = "existing"
+  convertPlotId.value = ""
+  convertPlots.value = []
+  newPlotName.value = ""
+  newPlotArea.value = doc.value?.area_value || 0
+  newPlotUnit.value = AREA_UNIT_TO_PLOT_UNIT[doc.value?.area_unit] || "Cent"
+  newPlotCluster.value = ""
+  await Promise.all([ensureCustomersLoaded(), ensureClustersLoaded()])
+  if (doc.value.customer) convertPlots.value = await fetchPlotsForCustomer(doc.value.customer)
+  showLinkRequired.value = true
+}
+
+async function submitLinkRequired() {
+  linking.value = true
+  linkError.value = null
+  convertDuplicate.value = null
+  try {
+    if (!doc.value.customer) {
+      const result =
+        convertCustomerMode.value === "existing"
+          ? await linkCustomer(doc.value.name, { customer: convertCustomerId.value })
+          : await linkCustomer(doc.value.name, { customerName: convertNewCustomerName.value, customerType: convertCustomerType.value, emailId: convertEmail.value, mobileNo: convertMobile.value })
+      if (result.duplicate) {
+        convertDuplicate.value = result
+        return
+      }
+      doc.value.customer = result.customer
+      convertPlots.value = await fetchPlotsForCustomer(doc.value.customer)
+    }
+    if (!doc.value.plot) {
+      if (convertPlotMode.value === "existing" && convertPlotId.value) {
+        const result = await linkPlot(doc.value.name, convertPlotId.value)
+        doc.value.plot = result.plot
+      } else if (convertPlotMode.value === "new" && newPlotName.value && newPlotCluster.value) {
+        const result = await createPlot(doc.value.name, { plotName: newPlotName.value, area: newPlotArea.value, units: newPlotUnit.value, cluster: newPlotCluster.value })
+        doc.value.plot = result.plot
+      }
+    }
+    if (doc.value.customer && doc.value.plot) {
+      showLinkRequired.value = false
+      triggerTransition("convert")
+    } else if (doc.value.customer && !doc.value.plot) {
+      linkError.value = "Pick an existing plot, or fill in the new plot's name and cluster."
+    }
+  } catch (e) {
+    linkError.value = e.messages?.[0] || e.message || "Failed to link customer/plot."
+  } finally {
+    linking.value = false
+  }
+}
+
 function triggerTransition(action) {
   transitionError.value = null
+  if (action === "convert" && (!doc.value.customer || !doc.value.plot)) {
+    openLinkRequired()
+    return
+  }
+  if (action === "approve") {
+    linkOnApprove.value = false
+    approveCustomerMode.value = "existing"
+    approveCustomerId.value = ""
+    approveNewCustomerName.value = doc.value?.client_name || ""
+    approveCustomerType.value = "Individual"
+    approveEmail.value = ""
+    approveMobile.value = ""
+    approveDuplicate.value = null
+  }
   pendingAction.value = action
   showConfirmTransition.value = true
 }
@@ -396,9 +552,30 @@ async function confirmTransition() {
     Object.assign(doc.value, flattenLocalState())
     if (pendingAction.value === "approve") {
       doc.value = await approveEstimate(doc.value)
+      if (linkOnApprove.value) {
+        try {
+          const result =
+            approveCustomerMode.value === "existing"
+              ? await linkCustomer(doc.value.name, { customer: approveCustomerId.value })
+              : await linkCustomer(doc.value.name, { customerName: approveNewCustomerName.value, customerType: approveCustomerType.value, emailId: approveEmail.value, mobileNo: approveMobile.value })
+          if (result.duplicate) {
+            // The dialog is already closed at this point (Approve itself
+            // succeeded) — no live "switch to existing" affordance to show
+            // here, unlike the Convert-to-Project modal which stays open.
+            // Surface it plainly and point at the retry path instead.
+            transitionError.value = `Estimate approved. ${result.message} Click "Convert to Project" to link a customer and pick which one.`
+          } else {
+            doc.value.customer = result.customer
+          }
+        } catch (e) {
+          transitionError.value = `Estimate approved, but linking the customer failed: ${e.messages?.[0] || e.message || "unknown error"}`
+        }
+        linkOnApprove.value = false
+      }
     } else if (pendingAction.value === "convert") {
       await convertEstimateToProject(doc.value)
-      linkedProject.value = await fetchLinkedProject(doc.value.name)
+      const refreshed = await fetchEstimateWithProject(doc.value.name)
+      linkedProject.value = refreshed.linkedProject
     }
     loadIntoLocalState(doc.value)
   } catch (e) {
@@ -863,6 +1040,9 @@ async function confirmCancel() {
           <router-link :to="`/estimates/${doc.name}/output`" class="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
             <AppIcon name="file" :size="15" /> View Documents
           </router-link>
+          <router-link v-if="needsLinking" to="#" @click.prevent="openLinkRequired" class="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
+            <AppIcon name="users" :size="15" /> {{ !doc.customer ? "Link Customer & Plot" : "Link Plot" }}
+          </router-link>
           <router-link v-if="canAmend" to="#" @click.prevent="showConfirmAmend = true" class="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
             <AppIcon name="copy" :size="15" /> Revise
           </router-link>
@@ -888,14 +1068,203 @@ async function confirmCancel() {
       title="Confirm"
       :message="
         pendingAction === 'approve'
-          ? `Approve ${doc.name}? ${!doc.customer ? 'A Customer record will be created automatically from the client name on file.' : ''} This locks the line items from further direct edits — use Revise afterward if changes are needed.`
+          ? `Approve ${doc.name}? This locks the line items from further direct edits — use Revise afterward if changes are needed.`
           : `Convert ${doc.name} to a Project? This creates a Farm Project record. This cannot be undone.`
       "
       confirm-label="Confirm"
       cancel-label="Cancel"
       @confirm="confirmTransition"
       @cancel="showConfirmTransition = false"
-    />
+    >
+      <div v-if="pendingAction === 'approve' && !doc.customer" class="space-y-2.5 pt-1">
+        <label class="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+          <input type="checkbox" v-model="linkOnApprove" class="rounded border-border" />
+          Link a customer now
+        </label>
+        <div v-if="linkOnApprove" class="space-y-2 pl-6">
+          <div class="flex gap-1 p-1 bg-surface-muted rounded-lg w-fit">
+            <button
+              type="button"
+              @click="approveCustomerMode = 'existing'"
+              class="px-2.5 py-1 rounded text-xs font-medium transition-colors"
+              :class="approveCustomerMode === 'existing' ? 'bg-surface text-foreground shadow-sm' : 'text-muted'"
+            >
+              Existing
+            </button>
+            <button
+              type="button"
+              @click="approveCustomerMode = 'new'"
+              class="px-2.5 py-1 rounded text-xs font-medium transition-colors"
+              :class="approveCustomerMode === 'new' ? 'bg-surface text-foreground shadow-sm' : 'text-muted'"
+            >
+              New
+            </button>
+          </div>
+          <RecordPicker v-if="approveCustomerMode === 'existing'" v-model="approveCustomerId" :options="customerOptionsForLink" placeholder="Select customer" />
+          <template v-else>
+            <input
+              v-model="approveNewCustomerName"
+              type="text"
+              placeholder="Customer name"
+              class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <select v-model="approveCustomerType" class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
+              <option>Individual</option>
+              <option>Company</option>
+              <option>Partnership</option>
+            </select>
+            <div class="grid grid-cols-2 gap-2">
+              <input
+                v-model="approveEmail"
+                type="email"
+                placeholder="Email (optional)"
+                class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <input
+                v-model="approveMobile"
+                type="text"
+                placeholder="Phone (optional)"
+                class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+            <div v-if="approveDuplicate" class="p-2.5 rounded-lg bg-warning-soft border border-warning/20 text-xs text-foreground space-y-1.5">
+              <p>{{ approveDuplicate.message }}</p>
+              <button type="button" @click="useDuplicateAsExisting('approve')" class="font-semibold text-primary hover:underline">Use the existing customer instead</button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </ConfirmDialog>
+
+    <div v-if="showLinkRequired" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/50" @click.self="showLinkRequired = false">
+      <div class="bg-surface rounded-xl w-full max-w-sm shadow-2xl">
+        <div class="p-6 space-y-3">
+          <div class="flex items-center gap-2.5">
+            <span class="flex items-center justify-center w-9 h-9 rounded-lg bg-warning-soft text-warning shrink-0">
+              <AppIcon name="alert" :size="18" />
+            </span>
+            <h3 class="font-display text-lg font-semibold text-foreground">Link Customer & Plot</h3>
+          </div>
+          <p class="text-sm text-muted leading-relaxed">Converting {{ doc?.name }} to a Project needs a linked Customer and Plot.</p>
+
+          <div v-if="!doc.customer" class="space-y-2">
+            <p class="text-xs font-semibold text-muted uppercase tracking-wide">Customer</p>
+            <div class="flex gap-1 p-1 bg-surface-muted rounded-lg w-fit">
+              <button
+                type="button"
+                @click="convertCustomerMode = 'existing'"
+                class="px-2.5 py-1 rounded text-xs font-medium transition-colors"
+                :class="convertCustomerMode === 'existing' ? 'bg-surface text-foreground shadow-sm' : 'text-muted'"
+              >
+                Existing
+              </button>
+              <button
+                type="button"
+                @click="convertCustomerMode = 'new'"
+                class="px-2.5 py-1 rounded text-xs font-medium transition-colors"
+                :class="convertCustomerMode === 'new' ? 'bg-surface text-foreground shadow-sm' : 'text-muted'"
+              >
+                New
+              </button>
+            </div>
+            <RecordPicker v-if="convertCustomerMode === 'existing'" v-model="convertCustomerId" :options="customerOptionsForLink" placeholder="Select customer" />
+            <template v-else>
+              <input
+                v-model="convertNewCustomerName"
+                type="text"
+                placeholder="Customer name"
+                class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <select v-model="convertCustomerType" class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
+                <option>Individual</option>
+                <option>Company</option>
+                <option>Partnership</option>
+              </select>
+              <div class="grid grid-cols-2 gap-2">
+                <input
+                  v-model="convertEmail"
+                  type="email"
+                  placeholder="Email (optional)"
+                  class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <input
+                  v-model="convertMobile"
+                  type="text"
+                  placeholder="Phone (optional)"
+                  class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div v-if="convertDuplicate" class="p-2.5 rounded-lg bg-warning-soft border border-warning/20 text-xs text-foreground space-y-1.5">
+                <p>{{ convertDuplicate.message }}</p>
+                <button type="button" @click="useDuplicateAsExisting('convert')" class="font-semibold text-primary hover:underline">Use the existing customer instead</button>
+              </div>
+            </template>
+          </div>
+
+          <div v-if="doc.customer && !doc.plot" class="space-y-2">
+            <p class="text-xs font-semibold text-muted uppercase tracking-wide">Plot</p>
+            <div class="flex gap-1 p-1 bg-surface-muted rounded-lg w-fit">
+              <button
+                type="button"
+                @click="convertPlotMode = 'existing'"
+                class="px-2.5 py-1 rounded text-xs font-medium transition-colors"
+                :class="convertPlotMode === 'existing' ? 'bg-surface text-foreground shadow-sm' : 'text-muted'"
+              >
+                Existing
+              </button>
+              <button
+                type="button"
+                @click="convertPlotMode = 'new'"
+                class="px-2.5 py-1 rounded text-xs font-medium transition-colors"
+                :class="convertPlotMode === 'new' ? 'bg-surface text-foreground shadow-sm' : 'text-muted'"
+              >
+                New
+              </button>
+            </div>
+            <template v-if="convertPlotMode === 'existing'">
+              <RecordPicker v-model="convertPlotId" :options="convertPlots.map((p) => ({ value: p.name, label: `${p.plot_name} — ${p.area} ${p.units}` }))" placeholder="Select plot" />
+              <p v-if="!convertPlots.length" class="text-xs text-muted">No plots on file for this customer yet — switch to "New" to create one.</p>
+            </template>
+            <template v-else>
+              <p class="text-xs text-muted">For {{ doc.customer }}</p>
+              <input
+                v-model="newPlotName"
+                type="text"
+                placeholder="Plot name / number"
+                class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <div class="grid grid-cols-2 gap-2">
+                <input
+                  v-model.number="newPlotArea"
+                  type="number"
+                  step="0.01"
+                  placeholder="Area"
+                  class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <select v-model="newPlotUnit" class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
+                  <option>Sq.Ft</option>
+                  <option>Cent</option>
+                  <option>Acre</option>
+                </select>
+              </div>
+              <RecordPicker v-model="newPlotCluster" :options="clusterOptionsForLink" placeholder="Select cluster" />
+            </template>
+          </div>
+
+          <p v-if="linkError" class="text-sm text-negative bg-negative-soft rounded-lg p-2.5">{{ linkError }}</p>
+        </div>
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-border">
+          <button class="px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-surface-muted" @click="showLinkRequired = false">Cancel</button>
+          <button
+            class="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed"
+            :disabled="linking"
+            @click="submitLinkRequired"
+          >
+            {{ linking ? "Linking…" : "Link" }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <ConfirmDialog
       v-if="showConfirmCancel"

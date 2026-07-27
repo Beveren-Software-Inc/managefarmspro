@@ -28,6 +28,15 @@ export async function fetchPlots() {
   })
 }
 
+export async function fetchClusters() {
+  return call("frappe.client.get_list", {
+    doctype: "Cluster",
+    fields: ["name", "cluster_name"],
+    limit_page_length: 0,
+    order_by: "cluster_name asc",
+  })
+}
+
 export async function fetchPlotsForCustomer(customerName) {
   return call("frappe.client.get_list", {
     doctype: "Plot",

@@ -8,6 +8,7 @@ import TabNav from "@/components/TabNav.vue"
 import { fetchCustomer } from "@/data/customers.js"
 import { fetchPlotsForCustomer, plotBalance } from "@/data/plots.js"
 import { fetchInvoicesForCustomer, fetchInvoicePdfUrls } from "@/data/invoices.js"
+import { fetchEstimatesForCustomer, areaLabel } from "@/data/estimates.js"
 import { formatCurrency, formatDate } from "@/format.js"
 
 const route = useRoute()
@@ -18,14 +19,16 @@ const error = ref(null)
 const customer = ref(null)
 const plots = ref([])
 const invoices = ref([])
+const estimates = ref([])
 const pdfUrls = ref({})
 
 onMounted(async () => {
   try {
-    ;[customer.value, plots.value, invoices.value] = await Promise.all([
+    ;[customer.value, plots.value, invoices.value, estimates.value] = await Promise.all([
       fetchCustomer(route.params.id),
       fetchPlotsForCustomer(route.params.id),
       fetchInvoicesForCustomer(route.params.id),
+      fetchEstimatesForCustomer(route.params.id),
     ])
     pdfUrls.value = await fetchInvoicePdfUrls(invoices.value.map((i) => i.name))
   } catch (e) {
@@ -44,6 +47,7 @@ const tabs = computed(() => [
   { key: "basic", label: "Basic Info" },
   { key: "plots", label: `Plots (${plots.value.length})` },
   { key: "invoices", label: `Invoices (${invoices.value.length})` },
+  { key: "estimates", label: `Estimates (${estimates.value.length})` },
 ])
 
 const totalBudget = computed(() => plots.value.reduce((t, p) => t + (p.monthly_maintenance_budget || 0), 0))
@@ -186,6 +190,32 @@ const totalBalance = computed(() => plots.value.reduce((t, p) => t + plotBalance
           </tbody>
         </table>
       </div>
+    </div>
+    <!-- Estimates -->
+    <div v-else-if="tab === 'estimates'" class="space-y-3">
+      <p v-if="!estimates.length" class="text-center py-16 text-muted bg-surface border border-border rounded-xl">
+        No estimates linked to this customer yet.
+      </p>
+      <button
+        v-for="e in estimates"
+        :key="e.name"
+        class="w-full text-left bg-surface border border-border rounded-xl p-4 flex items-center gap-4 hover:border-primary/40"
+        @click="router.push(`/estimates/${e.name}`)"
+      >
+        <div class="w-10 h-10 rounded-lg bg-primary-soft text-primary flex items-center justify-center shrink-0">
+          <AppIcon name="file" :size="19" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="font-medium text-foreground truncate">{{ e.name }}</p>
+          <p class="text-xs text-muted">{{ e.category }} · {{ areaLabel(e) }}</p>
+        </div>
+        <div class="text-right shrink-0">
+          <p class="text-xs text-muted mb-1">Grand Total</p>
+          <p class="font-medium text-foreground tabular-nums">{{ formatCurrency(e.grand_total) }}</p>
+        </div>
+        <StatusBadge :status="e.statusLabel" />
+        <span class="text-muted"><AppIcon name="chevronRight" :size="18" /></span>
+      </button>
     </div>
   </div>
 
