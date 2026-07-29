@@ -4,8 +4,11 @@ import { call } from "@/call.js"
 // requires parent context to check permissions on a child doctype — confirmed
 // by hitting a real PermissionError trying it). Same reason this app's own
 // collated_plot_invoice.py never queries Labor/Equipment/Material Child via
-// the generic client API either. With only 14 categories, fetching each full
-// doc (child tables come embedded for free) is simpler and cheap enough.
+// the generic client API either. Project Category is an open doctype (not a
+// fixed set of 14 — anyone with access can add more, see
+// cloneCategoryTemplate/createCategoryTemplate below), but the count stays
+// small enough in practice that fetching each full doc (child tables come
+// embedded for free) is simpler and cheap enough.
 export async function fetchCategoryTemplates() {
   const rows = await call("frappe.client.get_list", { doctype: "Project Category", fields: ["name"], limit_page_length: 0, order_by: "category_name asc" })
   const docs = await Promise.all(rows.map((r) => call("frappe.client.get", { doctype: "Project Category", name: r.name })))
@@ -32,6 +35,23 @@ export async function updateCategoryTemplate(name, patch) {
   const doc = await call("frappe.client.get", { doctype: "Project Category", name })
   Object.assign(doc, patch)
   return call("frappe.client.save", { doc })
+}
+
+const PROJECT_CATEGORY_MODULE = "managefarmspro.managefarmspro.doctype.project_category.project_category"
+
+// Deep copy, server-side — mirrors amend_estimate's exact pattern
+// (frappe.copy_doc, see project_category.py). Copies Default Settings plus
+// every Standard Item/Activity row as new child rows, no live reference back
+// to the source. This is the primary "new category" path — cloning an
+// existing template and editing the differences, not building from scratch.
+export async function cloneCategoryTemplate(source, newCategoryName) {
+  return call(`${PROJECT_CATEGORY_MODULE}.clone_category_template`, { source, new_category_name: newCategoryName })
+}
+
+// Start-blank path — a plain insert, no source template. Offered alongside
+// cloning, not instead of it; cloning stays the default/recommended choice.
+export async function createCategoryTemplate(categoryName) {
+  return call("frappe.client.insert", { doc: { doctype: "Project Category", category_name: categoryName } })
 }
 
 export const LINE_TYPES = ["Material", "Labour", "Machinery", "Manual", "Overhead"]

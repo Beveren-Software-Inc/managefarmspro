@@ -15,9 +15,16 @@ import {
   LINE_TYPE_ITEM_GROUPS,
   CONSUMPTION_BASES,
 } from "@/data/category_templates.js"
+import { isSystemManager } from "@/session.js"
 
 const route = useRoute()
 const router = useRouter()
+
+// Client-side-only gate — hides the mutating actions (Add/Remove/Save) from
+// users who'd fail the save server-side anyway (Project Category is still
+// System Manager-only, see project_category.json). Viewing templates stays
+// open to everyone; only the write actions are gated.
+const canEdit = isSystemManager()
 
 const loading = ref(true)
 const error = ref(null)
@@ -176,27 +183,30 @@ async function doSave() {
           <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-muted text-[11px] font-semibold text-muted">
             <AppIcon name="lock" :size="11" /> Admin
           </span>
+          <span v-if="!canEdit" class="text-[11px] text-muted">View only</span>
           <span class="text-xs text-muted">{{ tmpl.name }}</span>
         </div>
         <h2 class="font-display text-2xl font-semibold text-foreground">{{ tmpl.category_name }}</h2>
       </div>
-      <button
-        v-if="isDirty"
-        @click="cancelEdits"
-        :disabled="saving"
-        class="px-4 py-2.5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-surface-muted transition-colors disabled:opacity-60"
-      >
-        Cancel
-      </button>
-      <button
-        @click="confirmSave"
-        :disabled="!isDirty || saving"
-        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        :class="saved ? 'bg-positive text-white' : 'bg-primary text-primary-foreground hover:bg-primary-hover'"
-      >
-        <AppIcon :name="saved ? 'check' : 'edit'" :size="16" />
-        {{ saving ? "Saving…" : saved ? "Saved" : "Save Template" }}
-      </button>
+      <template v-if="canEdit">
+        <button
+          v-if="isDirty"
+          @click="cancelEdits"
+          :disabled="saving"
+          class="px-4 py-2.5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-surface-muted transition-colors disabled:opacity-60"
+        >
+          Cancel
+        </button>
+        <button
+          @click="confirmSave"
+          :disabled="!isDirty || saving"
+          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          :class="saved ? 'bg-positive text-white' : 'bg-primary text-primary-foreground hover:bg-primary-hover'"
+        >
+          <AppIcon :name="saved ? 'check' : 'edit'" :size="16" />
+          {{ saving ? "Saving…" : saved ? "Saved" : "Save Template" }}
+        </button>
+      </template>
     </div>
 
     <p v-if="saveError" class="text-sm text-negative bg-negative-soft rounded-lg p-3">{{ saveError }}</p>
@@ -250,6 +260,7 @@ async function doSave() {
           <span class="text-xs text-muted">({{ tmpl.items.length }})</span>
         </div>
         <button
+          v-if="canEdit"
           @click="showAddItem = !showAddItem"
           class="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:bg-primary-soft px-2.5 py-1.5 rounded-lg transition-colors"
         >
@@ -340,7 +351,7 @@ async function doSave() {
                 {{ row.item ? formatCurrency(itemOption(row.item)?.unit_price) : "—" }}
               </td>
               <td class="px-3 py-2.5">
-                <button @click="removeItem(i)" class="opacity-0 group-hover:opacity-100 text-muted hover:text-negative transition-all p-0.5 rounded" aria-label="Remove item">
+                <button v-if="canEdit" @click="removeItem(i)" class="opacity-0 group-hover:opacity-100 text-muted hover:text-negative transition-all p-0.5 rounded" aria-label="Remove item">
                   <AppIcon name="trash" :size="14" />
                 </button>
               </td>
@@ -359,7 +370,11 @@ async function doSave() {
           <h3 class="font-medium text-foreground">Standard Activities</h3>
           <span class="text-xs text-muted">({{ tmpl.activities.length }})</span>
         </div>
-        <button @click="showAddActivity = !showAddActivity" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-surface-muted transition-colors">
+        <button
+          v-if="canEdit"
+          @click="showAddActivity = !showAddActivity"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-surface-muted transition-colors"
+        >
           <AppIcon name="plus" :size="14" /> Add Activity
         </button>
       </div>
@@ -445,7 +460,7 @@ async function doSave() {
                 />
               </td>
               <td class="px-3 py-2.5">
-                <button @click="removeActivity(i)" class="opacity-0 group-hover:opacity-100 text-muted hover:text-negative transition-all p-0.5 rounded" aria-label="Remove activity">
+                <button v-if="canEdit" @click="removeActivity(i)" class="opacity-0 group-hover:opacity-100 text-muted hover:text-negative transition-all p-0.5 rounded" aria-label="Remove activity">
                   <AppIcon name="trash" :size="14" />
                 </button>
               </td>

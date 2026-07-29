@@ -2,7 +2,9 @@
 import { ref, computed, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
-import { fetchCategoryTemplates, spacingLabel, pitSizeLabel, supervisionLabel, CATEGORY_ICONS } from "@/data/category_templates.js"
+import RecordPicker from "@/components/RecordPicker.vue"
+import { fetchCategoryTemplates, cloneCategoryTemplate, createCategoryTemplate, spacingLabel, pitSizeLabel, supervisionLabel, CATEGORY_ICONS } from "@/data/category_templates.js"
+import { isSystemManager } from "@/session.js"
 
 const router = useRouter()
 
@@ -24,6 +26,53 @@ onMounted(async () => {
 const filtered = computed(() =>
   templates.value.filter((t) => !query.value || t.category_name.toLowerCase().includes(query.value.toLowerCase())),
 )
+
+// ---- New Category (clone an existing template, or start blank) — clone is
+// the default/primary path per the real driving need (variants like
+// "Landscape Work — with Irrigation & Fencing" instead of rebuilding from
+// scratch). Both hand off into the existing editor for further tweaking. ----
+const showNewModal = ref(false)
+const newMode = ref("clone") // 'clone' | 'blank'
+const newName = ref("")
+const newSource = ref("")
+const creating = ref(false)
+const createError = ref(null)
+const templateOptions = computed(() => templates.value.map((t) => ({ value: t.name, label: t.category_name })))
+
+function openNewModal() {
+  newMode.value = "clone"
+  newName.value = ""
+  newSource.value = templates.value[0]?.name || ""
+  createError.value = null
+  showNewModal.value = true
+}
+
+const nameCollision = computed(() => templates.value.some((t) => t.category_name.toLowerCase() === newName.value.trim().toLowerCase()))
+
+async function submitNewCategory() {
+  const name = newName.value.trim()
+  if (!name) return
+  if (nameCollision.value) {
+    createError.value = `A category named "${name}" already exists.`
+    return
+  }
+  if (newMode.value === "clone" && !newSource.value) {
+    createError.value = "Pick a template to clone from."
+    return
+  }
+  creating.value = true
+  createError.value = null
+  try {
+    const doc =
+      newMode.value === "clone" ? await cloneCategoryTemplate(newSource.value, name) : await createCategoryTemplate(name)
+    showNewModal.value = false
+    router.push(`/category-templates/${doc.name}`)
+  } catch (e) {
+    createError.value = e.messages?.[0] || e.message || "Failed to create this category."
+  } finally {
+    creating.value = false
+  }
+}
 </script>
 
 <template>
@@ -37,8 +86,15 @@ const filtered = computed(() =>
           </span>
         </div>
         <h2 class="font-display text-2xl font-semibold text-foreground">Category Templates</h2>
-        <p class="text-sm text-muted mt-0.5">Master templates for all 14 project categories. Applied when creating a new estimate.</p>
+        <p class="text-sm text-muted mt-0.5">Master templates for project categories. Applied when creating a new estimate.</p>
       </div>
+      <button
+        v-if="isSystemManager()"
+        @click="openNewModal"
+        class="sm:ml-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-hover transition-colors flex-shrink-0"
+      >
+        <AppIcon name="plus" :size="16" /> New Category
+      </button>
     </div>
 
     <p v-if="loading" class="text-sm text-muted text-center py-16">Loading templates…</p>
@@ -103,5 +159,59 @@ const filtered = computed(() =>
         No templates match your search.
       </div>
     </template>
+
+    <div v-if="showNewModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/50" @click.self="showNewModal = false">
+      <div class="bg-surface rounded-xl w-full max-w-sm shadow-2xl">
+        <div class="p-6 space-y-3">
+          <h3 class="font-display text-lg font-semibold text-foreground">New Category</h3>
+
+          <div class="flex gap-1 p-1 bg-surface-muted rounded-lg w-fit">
+            <button
+              type="button"
+              @click="newMode = 'clone'"
+              class="px-2.5 py-1 rounded text-xs font-medium transition-colors"
+              :class="newMode === 'clone' ? 'bg-surface text-foreground shadow-sm' : 'text-muted'"
+            >
+              Clone Existing
+            </button>
+            <button
+              type="button"
+              @click="newMode = 'blank'"
+              class="px-2.5 py-1 rounded text-xs font-medium transition-colors"
+              :class="newMode === 'blank' ? 'bg-surface text-foreground shadow-sm' : 'text-muted'"
+            >
+              Start Blank
+            </button>
+          </div>
+
+          <label v-if="newMode === 'clone'" class="block">
+            <span class="text-xs text-muted mb-1 block">Clone From</span>
+            <RecordPicker v-model="newSource" :options="templateOptions" placeholder="Select a template" />
+          </label>
+
+          <label class="block">
+            <span class="text-xs text-muted mb-1 block">New Category Name</span>
+            <input
+              v-model="newName"
+              type="text"
+              placeholder="e.g. Landscape Work — with Irrigation &amp; Fencing"
+              class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </label>
+
+          <p v-if="createError" class="text-sm text-negative bg-negative-soft rounded-lg p-2.5">{{ createError }}</p>
+        </div>
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-border">
+          <button class="px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-surface-muted" @click="showNewModal = false">Cancel</button>
+          <button
+            class="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed"
+            :disabled="creating || !newName.trim()"
+            @click="submitNewCategory"
+          >
+            {{ creating ? "Creating…" : "Create" }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
