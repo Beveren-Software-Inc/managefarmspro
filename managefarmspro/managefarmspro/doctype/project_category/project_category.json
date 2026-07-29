@@ -41,15 +41,17 @@
    "label": "Defaults"
   },
   {
+   "description": "Feet — matches Area (Sqft) directly, no unit conversion. Confirmed against the original requirement doc's worked example (10,000 sqft / 5ft x 5ft = 400 plants).",
    "fieldname": "default_row_spacing",
    "fieldtype": "Float",
-   "label": "Default Row Spacing (m)",
+   "label": "Default Row Spacing (ft)",
    "precision": "2"
   },
   {
+   "description": "Feet — matches Area (Sqft) directly, no unit conversion.",
    "fieldname": "default_plant_spacing",
    "fieldtype": "Float",
-   "label": "Default Plant Spacing (m)",
+   "label": "Default Plant Spacing (ft)",
    "precision": "2"
   },
   {

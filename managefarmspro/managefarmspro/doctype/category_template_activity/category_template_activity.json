@@ -7,7 +7,10 @@
  "engine": "InnoDB",
  "field_order": [
   "activity",
-  "standard_output_override"
+  "standard_output_override",
+  "item",
+  "consumption_basis",
+  "consumption_rate"
  ],
  "fields": [
   {
@@ -25,6 +28,29 @@
    "in_list_view": 1,
    "label": "Standard Output Override",
    "precision": "2"
+  },
+  {
+   "description": "Labor-group Item whose Item Price is this activity's Daily Wage — same mechanism Materials already use for their rate",
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item"
+  },
+  {
+   "description": "How the area-driven quantity (plant count / area / fixed) is derived for this activity — same options and formula as Category Template Item",
+   "fieldname": "consumption_basis",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Consumption Basis",
+   "options": "Per Plant\nPer Pit\nPer Sqft\nPer Running Foot\nFixed Quantity"
+  },
+  {
+   "fieldname": "consumption_rate",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Consumption Rate",
+   "precision": "3"
   }
  ],
  "index_web_pages_for_search": 1,

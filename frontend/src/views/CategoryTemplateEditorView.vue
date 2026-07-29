@@ -12,6 +12,7 @@ import {
   fetchActivities,
   fetchAllItemOptions,
   LINE_TYPES,
+  LINE_TYPE_ITEM_GROUPS,
   CONSUMPTION_BASES,
 } from "@/data/category_templates.js"
 
@@ -57,6 +58,13 @@ onMounted(async () => {
 function itemOption(code) {
   return itemOptions.value.find((o) => o.value === code) || null
 }
+// Same Item-Group filtering the Estimate Builder's Add Line flow already
+// uses (LINE_TYPE_ITEM_GROUPS) — a Type pick here should narrow the Item
+// dropdown the same way, not show all 399 items regardless of Type.
+function itemOptionsForType(lineType) {
+  const groups = LINE_TYPE_ITEM_GROUPS[lineType] || []
+  return itemOptions.value.filter((o) => groups.includes(o.item_group))
+}
 function activityOption(code) {
   return activityOptions.value.find((o) => o.value === code) || null
 }
@@ -98,11 +106,19 @@ function onItemPick(row, code) {
 }
 
 // ---- Standard Activities ----
-const newActivity = reactive({ activity: "", standard_output_override: null })
+const showAddActivity = ref(false)
+const newActivity = reactive({ activity: "", standard_output_override: null, item: "", consumption_basis: "Per Plant", consumption_rate: null })
 function addActivity() {
   if (!newActivity.activity) return
-  tmpl.activities.push({ activity: newActivity.activity, standard_output_override: newActivity.standard_output_override })
-  Object.assign(newActivity, { activity: "", standard_output_override: null })
+  tmpl.activities.push({
+    activity: newActivity.activity,
+    standard_output_override: newActivity.standard_output_override,
+    item: newActivity.item || null,
+    consumption_basis: newActivity.consumption_basis,
+    consumption_rate: newActivity.consumption_rate,
+  })
+  Object.assign(newActivity, { activity: "", standard_output_override: null, item: "", consumption_basis: "Per Plant", consumption_rate: null })
+  showAddActivity.value = false
 }
 function removeActivity(i) {
   tmpl.activities.splice(i, 1)
@@ -194,11 +210,11 @@ async function doSave() {
       </label>
       <div class="grid sm:grid-cols-3 gap-4">
         <label class="block">
-          <span class="text-sm text-muted mb-1.5 block">Row Spacing (m)</span>
+          <span class="text-sm text-muted mb-1.5 block">Row Spacing (ft)</span>
           <input v-model.number="tmpl.default_row_spacing" type="number" step="0.1" class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
         </label>
         <label class="block">
-          <span class="text-sm text-muted mb-1.5 block">Plant Spacing (m)</span>
+          <span class="text-sm text-muted mb-1.5 block">Plant Spacing (ft)</span>
           <input v-model.number="tmpl.default_plant_spacing" type="number" step="0.1" class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
         </label>
         <label class="block">
@@ -247,13 +263,13 @@ async function doSave() {
           <input type="checkbox" v-model="newItem.is_manual" class="rounded border-border" /> Manual placeholder line (no linked Item)
         </label>
         <div class="grid sm:grid-cols-3 gap-3">
-          <label v-if="!newItem.is_manual" class="block">
-            <span class="text-xs text-muted mb-1 block">Item</span>
-            <RecordPicker v-model="newItem.item" :options="itemOptions" placeholder="Select item" />
-          </label>
           <label class="block">
             <span class="text-xs text-muted mb-1 block">Type</span>
-            <FilterCombobox v-model="newItem.line_type" :options="LINE_TYPES" />
+            <FilterCombobox v-model="newItem.line_type" :options="LINE_TYPES" @update:modelValue="newItem.item = ''" />
+          </label>
+          <label v-if="!newItem.is_manual" class="block">
+            <span class="text-xs text-muted mb-1 block">Item</span>
+            <RecordPicker v-model="newItem.item" :options="itemOptionsForType(newItem.line_type)" placeholder="Select item" />
           </label>
           <label class="block" :class="newItem.is_manual ? 'sm:col-span-2' : ''">
             <span class="text-xs text-muted mb-1 block">Description</span>
@@ -303,7 +319,7 @@ async function doSave() {
           <tbody class="divide-y divide-border">
             <tr v-for="(row, i) in tmpl.items" :key="i" class="hover:bg-surface-muted/20 group">
               <td class="px-5 py-2.5 font-medium text-foreground">
-                <RecordPicker v-if="!row.is_manual" :model-value="row.item" :options="itemOptions" placeholder="Select item" @update:modelValue="(v) => onItemPick(row, v)" />
+                <RecordPicker v-if="!row.is_manual" :model-value="row.item" :options="itemOptionsForType(row.line_type)" placeholder="Select item" @update:modelValue="(v) => onItemPick(row, v)" />
                 <input v-else v-model="row.description" type="text" placeholder="Manual line description" class="w-full text-sm bg-transparent border-0 focus:outline-none focus:bg-surface rounded px-1 -mx-1" />
               </td>
               <td class="px-5 py-2.5">
@@ -336,38 +352,108 @@ async function doSave() {
     </div>
 
     <!-- Activities -->
-    <div class="bg-surface border border-border rounded-xl p-5">
-      <div class="flex items-center gap-2 mb-4">
-        <AppIcon name="check" :size="16" class="text-primary" />
-        <h3 class="font-medium text-foreground">Standard Activities</h3>
-        <span class="text-xs text-muted">({{ tmpl.activities.length }})</span>
-      </div>
-      <div class="space-y-2 mb-3">
-        <div v-for="(row, i) in tmpl.activities" :key="i" class="flex items-center gap-2 group">
-          <span class="w-5 h-5 rounded-full bg-primary-soft text-primary text-xs flex items-center justify-center flex-shrink-0 font-semibold">{{ i + 1 }}</span>
-          <div class="flex-1">
-            <RecordPicker :model-value="row.activity" :options="activityOptions" placeholder="Select activity" @update:modelValue="(v) => (row.activity = v)" />
-          </div>
-          <input v-model.number="row.standard_output_override" type="number" placeholder="Output override" class="w-36 text-sm py-1.5 px-3 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary/30" />
-          <button @click="removeActivity(i)" class="opacity-0 group-hover:opacity-100 text-muted hover:text-negative transition-all p-1 rounded" aria-label="Remove activity">
-            <AppIcon name="x" :size="14" />
-          </button>
+    <div class="bg-surface border border-border rounded-xl overflow-hidden">
+      <div class="flex items-center justify-between p-5 pb-4">
+        <div class="flex items-center gap-2">
+          <AppIcon name="check" :size="16" class="text-primary" />
+          <h3 class="font-medium text-foreground">Standard Activities</h3>
+          <span class="text-xs text-muted">({{ tmpl.activities.length }})</span>
         </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="w-5 h-5 flex-shrink-0" aria-hidden="true" />
-        <div class="flex-1">
-          <RecordPicker v-model="newActivity.activity" :options="activityOptions" placeholder="Select activity to add…" />
-        </div>
-        <input v-model.number="newActivity.standard_output_override" type="number" placeholder="Output override" class="w-36 text-sm py-1.5 px-3 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary/30" />
-        <button
-          @click="addActivity"
-          :disabled="!newActivity.activity"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-        >
-          <AppIcon name="plus" :size="14" /> Add
+        <button @click="showAddActivity = !showAddActivity" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-surface-muted transition-colors">
+          <AppIcon name="plus" :size="14" /> Add Activity
         </button>
       </div>
+
+      <!-- Add activity form -->
+      <div v-if="showAddActivity" class="mx-5 mb-4 px-5 py-4 rounded-xl bg-primary-soft/30 space-y-3">
+        <div class="grid sm:grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-xs text-muted mb-1 block">Activity</span>
+            <RecordPicker v-model="newActivity.activity" :options="activityOptions" placeholder="Select activity" />
+          </label>
+          <label class="block">
+            <span class="text-xs text-muted mb-1 block">Standard Output Override</span>
+            <input v-model.number="newActivity.standard_output_override" type="number" placeholder="Leave blank to use Activity default" class="w-full py-2 px-3 rounded-lg bg-surface border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          </label>
+        </div>
+        <div class="grid sm:grid-cols-3 gap-3 items-end">
+          <label class="block">
+            <span class="text-xs text-muted mb-1 block">Item (Daily Wage)</span>
+            <RecordPicker v-model="newActivity.item" :options="itemOptionsForType('Labour')" placeholder="Select labour item" />
+          </label>
+          <label class="block">
+            <span class="text-xs text-muted mb-1 block">Consumption Basis</span>
+            <FilterCombobox v-model="newActivity.consumption_basis" :options="CONSUMPTION_BASES" />
+          </label>
+          <label class="block">
+            <span class="text-xs text-muted mb-1 block">Consumption Rate</span>
+            <input
+              v-model.number="newActivity.consumption_rate"
+              type="number"
+              step="0.001"
+              placeholder="e.g. 1 — counts the area/plants once, not a per-unit multiplier"
+              class="w-full py-2 px-3 rounded-lg bg-surface border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </label>
+        </div>
+        <div class="flex gap-2">
+          <button
+            @click="addActivity"
+            :disabled="!newActivity.activity"
+            class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <AppIcon name="check" :size="15" /> Add
+          </button>
+          <button @click="showAddActivity = false" class="px-3 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-surface-muted transition-colors">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Activities table -->
+      <div v-if="tmpl.activities.length">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left border-b border-border">
+              <th class="font-normal text-muted px-5 py-2.5">Activity</th>
+              <th class="font-normal text-muted px-5 py-2.5 text-right">Output Override</th>
+              <th class="font-normal text-muted px-5 py-2.5">Item</th>
+              <th class="font-normal text-muted px-5 py-2.5">Basis</th>
+              <th class="font-normal text-muted px-5 py-2.5 text-right">Rate</th>
+              <th class="font-normal px-4 py-2.5 w-8"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border">
+            <tr v-for="(row, i) in tmpl.activities" :key="i" class="hover:bg-surface-muted/20 group">
+              <td class="px-5 py-2.5 font-medium text-foreground">
+                <RecordPicker :model-value="row.activity" :options="activityOptions" placeholder="Select activity" @update:modelValue="(v) => (row.activity = v)" />
+              </td>
+              <td class="px-5 py-2.5 text-right tabular-nums">
+                <input v-model.number="row.standard_output_override" type="number" placeholder="default" class="w-24 text-sm bg-transparent border-0 focus:outline-none focus:bg-surface rounded px-1 text-right tabular-nums" />
+              </td>
+              <td class="px-5 py-2.5">
+                <RecordPicker :model-value="row.item" :options="itemOptionsForType('Labour')" placeholder="Select item" @update:modelValue="(v) => (row.item = v)" />
+              </td>
+              <td class="px-5 py-2.5 text-muted">
+                <FilterCombobox v-model="row.consumption_basis" :options="CONSUMPTION_BASES" />
+              </td>
+              <td class="px-5 py-2.5 text-right tabular-nums">
+                <input
+                  v-model.number="row.consumption_rate"
+                  type="number"
+                  step="0.001"
+                  title="Counts the area/plants once, not a per-unit multiplier — e.g. 1, not 1000"
+                  class="w-20 text-sm bg-transparent border-0 focus:outline-none focus:bg-surface rounded px-1 text-right tabular-nums"
+                />
+              </td>
+              <td class="px-3 py-2.5">
+                <button @click="removeActivity(i)" class="opacity-0 group-hover:opacity-100 text-muted hover:text-negative transition-all p-0.5 rounded" aria-label="Remove activity">
+                  <AppIcon name="trash" :size="14" />
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-else class="px-5 py-4 text-sm text-muted">No standard activities yet.</p>
     </div>
 
     <ConfirmDialog

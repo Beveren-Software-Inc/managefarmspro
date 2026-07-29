@@ -1,5 +1,5 @@
 import { call } from "@/call.js"
-import { fetchAllItemOptions } from "@/data/category_templates.js"
+import { fetchAllItemOptions, fetchActivities } from "@/data/category_templates.js"
 
 // Revised lifecycle model: native docstatus/submit/amend, not a custom
 // status field. "Approved" and "Converted to Project" are computed display
@@ -59,6 +59,18 @@ export function toSqft(unit, value) {
 // already specified in the approved plan (Section 3). Pits are treated as
 // one per plant. Per Running Foot has no perimeter input in this schema yet,
 // so it passes the template's own rate through as a manual starting value.
+// Shared between Category Template Item AND Category Template Activity rows
+// — both carry the same consumption_basis/consumption_rate shape, so
+// Labour's "Total Quantity" (before dividing by Standard Output) uses this
+// exact same area-driven formula, not a separate one.
+//
+// Row/Plant Spacing are in FEET, matching areaSqft directly — no unit
+// conversion. Confirmed against the original requirement doc's own worked
+// example (Area 10,000 sqft, Spacing 5ft x 5ft -> 400 plants = 10,000 / 25,
+// no conversion). A prior turn introduced an sqft->sqm conversion here on
+// the (wrong) assumption the "(m)" field label was authoritative — reverted;
+// the label was the actual bug (see project_category.json / spacingLabel()),
+// not this formula.
 function deriveQuantity(templateItem, template, areaSqft) {
   const rate = templateItem.consumption_rate || 0
   const plantQty = template.default_row_spacing && template.default_plant_spacing ? areaSqft / (template.default_row_spacing * template.default_plant_spacing) : 0
@@ -81,8 +93,9 @@ function deriveQuantity(templateItem, template, areaSqft) {
 // Project Line Item / Project Cost Component exactly so it can be inserted
 // as-is once the user clicks Create.
 export async function buildLineItemsFromTemplate(template, areaSqft) {
-  const itemOptions = await fetchAllItemOptions()
+  const [itemOptions, activityOptions] = await Promise.all([fetchAllItemOptions(), fetchActivities()])
   const byCode = Object.fromEntries(itemOptions.map((o) => [o.value, o]))
+  const activityByCode = Object.fromEntries(activityOptions.map((o) => [o.value, o]))
 
   const line_items = (template.items || []).map((ti) => {
     if (ti.is_manual) {
@@ -106,13 +119,50 @@ export async function buildLineItemsFromTemplate(template, areaSqft) {
     }
   })
 
+  // Labour Days = Total Quantity / Standard Output, where Total Quantity is
+  // the exact same area-driven number Materials derive (deriveQuantity, same
+  // consumption_basis/consumption_rate shape on Category Template Activity).
+  // Daily Wage comes from the linked Item's Item Price — the same mechanism
+  // Materials already use for their rate, not a new field. If neither the
+  // row's own override nor the Activity master has a Standard Output, there's
+  // no formula to run — falls back to the same manual-placeholder shape
+  // Category Template Item's is_manual lines already use (quantity: 1,
+  // is_manual: 1), so it shows up with the existing "manual" badge in the
+  // Builder instead of silently producing 0 or crashing.
+  const labourLines = (template.activities || []).map((row) => {
+    const activityMeta = activityByCode[row.activity]
+    const description = activityMeta?.label || row.activity
+    const rate = row.item ? byCode[row.item]?.unit_price || 0 : 0
+    const standardOutput = row.standard_output_override || activityMeta?.standard_output || 0
+
+    if (!standardOutput) {
+      return { section: "Materials", line_type: "Labour", source_item: row.item || null, description, quantity: 1, uom: "Days", rate, internal_rate: Math.round(rate * 0.8), amount: Math.round(rate * 100) / 100, is_override: 0, is_manual: 1 }
+    }
+
+    const totalQuantity = deriveQuantity(row, template, areaSqft)
+    const labourDays = Math.round((totalQuantity / standardOutput) * 1000) / 1000
+    return {
+      section: "Materials",
+      line_type: "Labour",
+      source_item: row.item || null,
+      description,
+      quantity: labourDays,
+      uom: "Days",
+      rate,
+      internal_rate: Math.round(rate * 0.8),
+      amount: Math.round(labourDays * rate * 100) / 100,
+      is_override: 0,
+      is_manual: 0,
+    }
+  })
+
   const cost_components = []
   if (template.default_supervision_value) {
     cost_components.push({ component_name: "Supervision", charge_type: template.default_supervision_type || "Percent", value: template.default_supervision_value })
   }
   cost_components.push({ component_name: "Consultation", charge_type: "Fixed", value: 0 })
 
-  return { line_items, cost_components }
+  return { line_items: [...line_items, ...labourLines], cost_components }
 }
 
 // The real first write — nothing exists in the backend before this. Lands

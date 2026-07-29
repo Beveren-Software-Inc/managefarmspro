@@ -51,8 +51,8 @@ export const LINE_TYPE_ITEM_GROUPS = {
 }
 
 export async function fetchActivities() {
-  const rows = await call("frappe.client.get_list", { doctype: "Activity", fields: ["name", "activity_name", "unit"], limit_page_length: 0, order_by: "activity_name asc" })
-  return rows.map((r) => ({ value: r.name, label: r.activity_name, unit: r.unit }))
+  const rows = await call("frappe.client.get_list", { doctype: "Activity", fields: ["name", "activity_name", "unit", "standard_output"], limit_page_length: 0, order_by: "activity_name asc" })
+  return rows.map((r) => ({ value: r.name, label: r.activity_name, unit: r.unit, standard_output: r.standard_output }))
 }
 
 // Unfiltered across all Item Groups (399 real items today — small enough for
@@ -75,7 +75,7 @@ export async function fetchAllItemOptions() {
 }
 
 export function spacingLabel(t) {
-  if (t.default_row_spacing && t.default_plant_spacing) return `${t.default_row_spacing}m x ${t.default_plant_spacing}m`
+  if (t.default_row_spacing && t.default_plant_spacing) return `${t.default_row_spacing}ft x ${t.default_plant_spacing}ft`
   return "—"
 }
 export function pitSizeLabel(t) {
