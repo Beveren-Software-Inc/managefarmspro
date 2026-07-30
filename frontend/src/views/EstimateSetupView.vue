@@ -72,8 +72,17 @@ onMounted(async () => {
 })
 
 // ── Step 0: Category ──────────────────────────────────────────
+// Edit mode stays single-category (selectedCategory) — recalculation diffs
+// against one fresh template, and reworking that for multiple categories is
+// out of scope here (see goNext()'s edit branch). Create mode is
+// multi-select (selectedCategories, ordered — first picked is primary,
+// becomes Estimate.category/Farm Project.category) — a real business
+// scenario per the client's own "Complete Plot Development" description
+// (food forest + boundary + composting + water catchment, bundled per
+// client, not a fixed combination worth its own category).
 const selectedCategory = ref("")
-const selectedTemplate = ref(null) // full doc, fetched on selection
+const selectedCategories = ref([])
+const selectedTemplate = ref(null) // full doc for whichever category is currently previewed
 const loadingTemplate = ref(false)
 
 watch(selectedCategory, async (name) => {
@@ -88,6 +97,17 @@ watch(selectedCategory, async (name) => {
     loadingTemplate.value = false
   }
 })
+
+function toggleCategory(name) {
+  selectedCategory.value = name // drives the preview panel either way
+  if (isEdit.value) return // edit mode stays single-select
+  const i = selectedCategories.value.indexOf(name)
+  if (i === -1) selectedCategories.value.push(name)
+  else selectedCategories.value.splice(i, 1)
+}
+function removeSelectedCategory(name) {
+  selectedCategories.value = selectedCategories.value.filter((n) => n !== name)
+}
 
 const TYPE_COLORS = {
   Material: "bg-warning-soft text-warning",
@@ -145,7 +165,7 @@ const steps = [
   { key: "area", label: "Area & Duration", icon: "plot" },
 ]
 
-const canStep1 = computed(() => !!selectedCategory.value)
+const canStep1 = computed(() => (isEdit.value ? !!selectedCategory.value : selectedCategories.value.length > 0))
 const canStep2 = computed(() => (clientMode.value === "customer" ? !!customerId.value : !!prospectName.value.trim() && !!prospectLocation.value.trim()))
 const canStep3 = computed(() => areaSqft.value > 0)
 
@@ -238,9 +258,16 @@ async function goNext() {
   creating.value = true
   createError.value = null
   try {
-    const { line_items, cost_components } = await buildLineItemsFromTemplate(selectedTemplate.value, areaSqft.value)
+    // Multi-category: apply every selected template, in selection order.
+    // Only the first (primary) contributes cost_components — Supervision/
+    // Consultation apply once per project, not once per bundled category,
+    // or a 3-category estimate would end up with 3 Supervision rows.
+    const templates = await Promise.all(selectedCategories.value.map((name) => fetchCategoryTemplate(name)))
+    const built = await Promise.all(templates.map((t) => buildLineItemsFromTemplate(t, areaSqft.value)))
+    const line_items = built.flatMap((b) => b.line_items)
+    const cost_components = built[0]?.cost_components || []
     setEstimateDraft({
-      category: selectedTemplate.value,
+      category: templates[0],
       client_name: clientMode.value === "customer" ? selectedCustomer.value?.customer_name : prospectName.value.trim(),
       customer: clientMode.value === "customer" ? customerId.value : null,
       plot: clientMode.value === "customer" ? plotId.value || null : null,
@@ -304,27 +331,58 @@ async function goNext() {
     <template v-if="currentStep === 0">
       <div class="bg-surface border border-border rounded-xl p-5">
         <h3 class="font-display text-base font-semibold text-foreground mb-1">Select Project Category</h3>
-        <p class="text-xs text-muted mb-4">Choose the category that best describes this project. A template will be pre-loaded.</p>
+        <p class="text-xs text-muted mb-4">
+          {{
+            isEdit
+              ? "Choose the category that best describes this project. A template will be pre-loaded."
+              : "Pick one or more categories — each applies its own template. The first one picked is the primary category. Click a card again to preview it without changing your selection."
+          }}
+        </p>
 
         <div class="grid sm:grid-cols-2 gap-2.5">
           <button
             v-for="t in categories"
             :key="t.name"
-            @click="selectedCategory = t.name"
+            @click="toggleCategory(t.name)"
             class="flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all"
-            :class="selectedCategory === t.name ? 'border-primary bg-primary-soft shadow-sm' : 'border-border bg-surface hover:border-primary/40 hover:bg-surface-muted/40'"
+            :class="
+              (isEdit ? selectedCategory === t.name : selectedCategories.includes(t.name))
+                ? 'border-primary bg-primary-soft shadow-sm'
+                : 'border-border bg-surface hover:border-primary/40 hover:bg-surface-muted/40'
+            "
           >
-            <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center" :class="selectedCategory === t.name ? 'bg-primary text-primary-foreground' : 'bg-surface-muted text-primary'">
+            <div
+              class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+              :class="(isEdit ? selectedCategory === t.name : selectedCategories.includes(t.name)) ? 'bg-primary text-primary-foreground' : 'bg-surface-muted text-primary'"
+            >
               <AppIcon :name="CATEGORY_ICONS[t.category_name] || 'leaf'" :size="16" />
             </div>
             <div class="min-w-0 flex-1">
               <p class="font-medium text-foreground text-sm leading-tight">{{ t.category_name }}</p>
               <p class="text-xs text-muted mt-0.5 truncate">Spacing: {{ spacingLabel(t) }}</p>
             </div>
-            <div class="flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors" :class="selectedCategory === t.name ? 'border-primary bg-primary' : 'border-border'">
-              <AppIcon v-if="selectedCategory === t.name" name="check" :size="9" class="text-primary-foreground" />
+            <div
+              class="flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors"
+              :class="(isEdit ? selectedCategory === t.name : selectedCategories.includes(t.name)) ? 'border-primary bg-primary' : 'border-border'"
+            >
+              <AppIcon v-if="isEdit ? selectedCategory === t.name : selectedCategories.includes(t.name)" name="check" :size="9" class="text-primary-foreground" />
             </div>
           </button>
+        </div>
+
+        <div v-if="!isEdit && selectedCategories.length" class="flex flex-wrap items-center gap-1.5 mt-4 pt-4 border-t border-border">
+          <span class="text-xs text-muted mr-1">Applying:</span>
+          <span
+            v-for="(name, i) in selectedCategories"
+            :key="name"
+            class="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-full text-xs font-medium"
+            :class="i === 0 ? 'bg-primary text-primary-foreground' : 'bg-surface-muted text-foreground border border-border'"
+          >
+            {{ name }} <span v-if="i === 0" class="opacity-75">· Primary</span>
+            <button @click.stop="removeSelectedCategory(name)" class="p-0.5 rounded-full hover:bg-black/10" :aria-label="`Remove ${name}`">
+              <AppIcon name="x" :size="10" />
+            </button>
+          </span>
         </div>
       </div>
 
@@ -379,14 +437,17 @@ async function goNext() {
       </div>
 
       <div class="flex items-center justify-between">
-        <p v-if="!selectedCategory" class="text-xs text-muted">Select a category above to preview its template.</p>
-        <span v-else class="text-xs text-positive flex items-center gap-1"><AppIcon name="check" :size="13" /> Template ready to apply</span>
+        <p v-if="!canStep1" class="text-xs text-muted">Select a category above to preview its template.</p>
+        <span v-else class="text-xs text-positive flex items-center gap-1">
+          <AppIcon name="check" :size="13" />
+          {{ isEdit || selectedCategories.length <= 1 ? "Template ready to apply" : `${selectedCategories.length} templates ready to apply` }}
+        </span>
         <button
           :disabled="!canStep1"
           @click="goNext"
           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          Apply Template & Continue <AppIcon name="chevronRight" :size="16" />
+          Apply Template{{ !isEdit && selectedCategories.length > 1 ? "s" : "" }} & Continue <AppIcon name="chevronRight" :size="16" />
         </button>
       </div>
     </template>

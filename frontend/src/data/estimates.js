@@ -96,16 +96,23 @@ export async function buildLineItemsFromTemplate(template, areaSqft) {
   const [itemOptions, activityOptions] = await Promise.all([fetchAllItemOptions(), fetchActivities()])
   const byCode = Object.fromEntries(itemOptions.map((o) => [o.value, o]))
   const activityByCode = Object.fromEntries(activityOptions.map((o) => [o.value, o]))
+  // Defaults every line's section to the category it came from, not a
+  // generic "Materials" bucket — still just the existing free-text section
+  // field, editable after like any other line. This is what makes applying
+  // more than one template to the same Estimate traceable (Boundary
+  // Plantation's lines land in a "Boundary Plantation" section, Composting
+  // Units' in "Composting Units", etc.) without a new field.
+  const section = template.category_name || "Materials"
 
   const line_items = (template.items || []).map((ti) => {
     if (ti.is_manual) {
-      return { section: "Materials", line_type: ti.line_type || "Manual", source_item: null, description: ti.description, quantity: 1, uom: ti.uom || "-", rate: 0, internal_rate: 0, amount: 0, is_override: 0, is_manual: 1 }
+      return { section, line_type: ti.line_type || "Manual", source_item: null, description: ti.description, quantity: 1, uom: ti.uom || "-", rate: 0, internal_rate: 0, amount: 0, is_override: 0, is_manual: 1 }
     }
     const opt = byCode[ti.item]
     const quantity = Math.round(deriveQuantity(ti, template, areaSqft) * 1000) / 1000
     const rate = opt?.unit_price || 0
     return {
-      section: "Materials",
+      section,
       line_type: ti.line_type || "Material",
       source_item: ti.item,
       description: ti.description || opt?.label || "",
@@ -136,13 +143,13 @@ export async function buildLineItemsFromTemplate(template, areaSqft) {
     const standardOutput = row.standard_output_override || activityMeta?.standard_output || 0
 
     if (!standardOutput) {
-      return { section: "Materials", line_type: "Labour", source_item: row.item || null, description, quantity: 1, uom: "Days", rate, internal_rate: Math.round(rate * 0.8), amount: Math.round(rate * 100) / 100, is_override: 0, is_manual: 1 }
+      return { section, line_type: "Labour", source_item: row.item || null, description, quantity: 1, uom: "Days", rate, internal_rate: Math.round(rate * 0.8), amount: Math.round(rate * 100) / 100, is_override: 0, is_manual: 1 }
     }
 
     const totalQuantity = deriveQuantity(row, template, areaSqft)
     const labourDays = Math.round((totalQuantity / standardOutput) * 1000) / 1000
     return {
-      section: "Materials",
+      section,
       line_type: "Labour",
       source_item: row.item || null,
       description,

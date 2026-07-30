@@ -106,9 +106,11 @@ export function supervisionLabel(t) {
   return t.default_supervision_type === "Fixed" ? `Fixed ₹${t.default_supervision_value}` : `${t.default_supervision_value}% of cost`
 }
 
-// Matches v0's per-category icon choices, keyed to this app's real 14
-// category names (two of which differ slightly in wording from v0's mock
-// data — mapped by intent, not string match).
+// Matches v0's per-category icon choices, keyed to this app's real category
+// names (two of which differ slightly in wording from v0's mock data —
+// mapped by intent, not string match). "Land Beautification" was folded
+// into "Landscape Work" and removed as a standalone category — no entry
+// needed here, unmapped names already fall back to 'leaf' gracefully.
 export const CATEGORY_ICONS = {
   "Landscape Work": "leaf",
   "Food Forest": "sprout",
@@ -118,7 +120,6 @@ export const CATEGORY_ICONS = {
   "Composting Units": "layers",
   "Vegetable Beds / Kitchen Gardens": "sprout",
   "Irrigation Works": "wallet",
-  "Land Beautification": "leaf",
   "Flowering Gardens": "leaf",
   "Boundary Plantation": "sprout",
   "Timber Plantation": "sprout",
