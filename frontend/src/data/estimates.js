@@ -57,12 +57,10 @@ export function toSqft(unit, value) {
 
 // Plant Quantity = Area / (Row Spacing x Plant Spacing) — the one formula
 // already specified in the approved plan (Section 3). Pits are treated as
-// one per plant. Per Running Foot has no perimeter input in this schema yet,
-// so it passes the template's own rate through as a manual starting value.
-// Shared between Category Template Item AND Category Template Activity rows
-// — both carry the same consumption_basis/consumption_rate shape, so
-// Labour's "Total Quantity" (before dividing by Standard Output) uses this
-// exact same area-driven formula, not a separate one.
+// one per plant. Shared between Category Template Item AND Category Template
+// Activity rows — both carry the same consumption_basis/consumption_rate
+// shape, so Labour's "Total Quantity" (before dividing by Standard Output)
+// uses this exact same formula, not a separate one.
 //
 // Row/Plant Spacing are in FEET, matching areaSqft directly — no unit
 // conversion. Confirmed against the original requirement doc's own worked
@@ -71,7 +69,12 @@ export function toSqft(unit, value) {
 // the (wrong) assumption the "(m)" field label was authoritative — reverted;
 // the label was the actual bug (see project_category.json / spacingLabel()),
 // not this formula.
-function deriveQuantity(templateItem, template, areaSqft) {
+//
+// Per Running Foot: confirmed with the client — they do measure boundary
+// perimeter for fencing/edging/boundary-planting jobs, so this is real, not
+// speculative. perimeterFt is Estimate.perimeter_ft, entered once in Setup
+// alongside area, same convention as area/spacing (feet, no conversion).
+function deriveQuantity(templateItem, template, areaSqft, perimeterFt) {
   const rate = templateItem.consumption_rate || 0
   const plantQty = template.default_row_spacing && template.default_plant_spacing ? areaSqft / (template.default_row_spacing * template.default_plant_spacing) : 0
   switch (templateItem.consumption_basis) {
@@ -80,6 +83,8 @@ function deriveQuantity(templateItem, template, areaSqft) {
     case "Per Plant":
     case "Per Pit":
       return plantQty * rate
+    case "Per Running Foot":
+      return (perimeterFt || 0) * rate
     case "Fixed Quantity":
       return rate || 1
     default:
@@ -92,7 +97,7 @@ function deriveQuantity(templateItem, template, areaSqft) {
 // assemble the local draft (nothing persisted yet); the shape matches
 // Project Line Item / Project Cost Component exactly so it can be inserted
 // as-is once the user clicks Create.
-export async function buildLineItemsFromTemplate(template, areaSqft) {
+export async function buildLineItemsFromTemplate(template, areaSqft, perimeterFt) {
   const [itemOptions, activityOptions] = await Promise.all([fetchAllItemOptions(), fetchActivities()])
   const byCode = Object.fromEntries(itemOptions.map((o) => [o.value, o]))
   const activityByCode = Object.fromEntries(activityOptions.map((o) => [o.value, o]))
@@ -109,7 +114,7 @@ export async function buildLineItemsFromTemplate(template, areaSqft) {
       return { section, line_type: ti.line_type || "Manual", source_item: null, description: ti.description, quantity: 1, uom: ti.uom || "-", rate: 0, internal_rate: 0, amount: 0, is_override: 0, is_manual: 1 }
     }
     const opt = byCode[ti.item]
-    const quantity = Math.round(deriveQuantity(ti, template, areaSqft) * 1000) / 1000
+    const quantity = Math.round(deriveQuantity(ti, template, areaSqft, perimeterFt) * 1000) / 1000
     const rate = opt?.unit_price || 0
     return {
       section,
@@ -146,7 +151,7 @@ export async function buildLineItemsFromTemplate(template, areaSqft) {
       return { section, line_type: "Labour", source_item: row.item || null, description, quantity: 1, uom: "Days", rate, internal_rate: Math.round(rate * 0.8), amount: Math.round(rate * 100) / 100, is_override: 0, is_manual: 1 }
     }
 
-    const totalQuantity = deriveQuantity(row, template, areaSqft)
+    const totalQuantity = deriveQuantity(row, template, areaSqft, perimeterFt)
     const labourDays = Math.round((totalQuantity / standardOutput) * 1000) / 1000
     return {
       section,
@@ -185,6 +190,7 @@ export async function createEstimate(draft) {
     area_value: draft.area_value,
     area_unit: draft.area_unit,
     area_sqft: draft.area_sqft,
+    perimeter_ft: draft.perimeter_ft || null,
     duration: draft.duration,
     line_items: draft.line_items,
     cost_components: draft.cost_components,

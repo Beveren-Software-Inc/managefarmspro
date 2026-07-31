@@ -14,6 +14,7 @@ export const estimateDraft = reactive({
   area_value: null,
   area_unit: "Sqft",
   area_sqft: null,
+  perimeter_ft: null,
   duration: "",
   line_items: [],
   cost_components: [],

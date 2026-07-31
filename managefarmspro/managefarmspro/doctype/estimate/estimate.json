@@ -22,6 +22,7 @@
   "area_value",
   "area_unit",
   "area_sqft",
+  "perimeter_ft",
   "section_break_lines",
   "line_items",
   "section_discounts",
@@ -127,6 +128,13 @@
    "label": "Area (Sqft)",
    "precision": "2",
    "read_only": 1
+  },
+  {
+   "description": "Boundary/perimeter length, in feet — matches Row/Plant Spacing's convention (Estimate area is Sqft, spacing/perimeter are Feet, no unit conversion between them). Drives Per Running Foot line items (fencing, edging, boundary planting). Optional — only needed for categories with boundary-length-driven items.",
+   "fieldname": "perimeter_ft",
+   "fieldtype": "Float",
+   "label": "Perimeter (ft)",
+   "precision": "2"
   },
   {
    "fieldname": "section_break_lines",

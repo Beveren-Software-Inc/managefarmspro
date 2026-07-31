@@ -359,6 +359,7 @@ async function createNow() {
       area_value: estimateDraft.area_value,
       area_unit: estimateDraft.area_unit,
       area_sqft: estimateDraft.area_sqft,
+      perimeter_ft: estimateDraft.perimeter_ft,
       duration: estimateDraft.duration,
       line_items: state.line_items,
       cost_components: state.cost_components,

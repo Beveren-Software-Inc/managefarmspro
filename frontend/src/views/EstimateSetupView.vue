@@ -29,6 +29,7 @@ const customers = ref([])
 // since line items aren't auto-regenerated on edit (see goNext()).
 const originalCategory = ref(null)
 const originalAreaSqft = ref(null)
+const originalPerimeterFt = ref(null)
 
 onMounted(async () => {
   try {
@@ -60,9 +61,11 @@ onMounted(async () => {
         areaMode.value = doc.area_unit
         areaValue.value = doc.area_value
       }
+      perimeterFt.value = doc.perimeter_ft || ""
       duration.value = doc.duration || ""
       originalCategory.value = doc.category || ""
       originalAreaSqft.value = doc.area_sqft || 0
+      originalPerimeterFt.value = doc.perimeter_ft || 0
     }
   } catch (e) {
     error.value = e.messages?.[0] || e.message || "Failed to load setup data."
@@ -144,6 +147,7 @@ const areaMode = ref("lxw")
 const areaLength = ref("")
 const areaWidth = ref("")
 const areaValue = ref("")
+const perimeterFt = ref("") // optional — only needed for boundary-length-driven items (fencing, edging)
 const duration = ref("")
 
 function setAreaMode(key) {
@@ -175,7 +179,13 @@ const createError = ref(null)
 // Line items were generated from the *original* category/area. Editing
 // setup here always patches the header fields; whether it also touches
 // line_items depends on recalculateLines below.
-const setupChanged = computed(() => isEdit.value && (selectedCategory.value !== originalCategory.value || areaSqft.value !== originalAreaSqft.value))
+const setupChanged = computed(
+  () =>
+    isEdit.value &&
+    (selectedCategory.value !== originalCategory.value ||
+      areaSqft.value !== originalAreaSqft.value ||
+      (Number(perimeterFt.value) || 0) !== originalPerimeterFt.value),
+)
 const recalculateLines = ref(true) // only surfaced/consulted when setupChanged
 
 // Override-aware merge (plan.md: "recalculating on an area change skips any
@@ -234,10 +244,11 @@ async function goNext() {
         area_value: areaMode.value === "lxw" ? areaSqft.value : Number(areaValue.value),
         area_unit: areaMode.value === "lxw" ? "Sqft" : areaMode.value,
         area_sqft: areaSqft.value,
+        perimeter_ft: Number(perimeterFt.value) || null,
         duration: duration.value,
       }
       if (setupChanged.value && recalculateLines.value) {
-        const { line_items: freshLines } = await buildLineItemsFromTemplate(selectedTemplate.value, areaSqft.value)
+        const { line_items: freshLines } = await buildLineItemsFromTemplate(selectedTemplate.value, areaSqft.value, Number(perimeterFt.value) || 0)
         patch.line_items = mergeRegeneratedLines(fresh.line_items, freshLines)
       }
       Object.assign(fresh, patch)
@@ -263,7 +274,7 @@ async function goNext() {
     // Consultation apply once per project, not once per bundled category,
     // or a 3-category estimate would end up with 3 Supervision rows.
     const templates = await Promise.all(selectedCategories.value.map((name) => fetchCategoryTemplate(name)))
-    const built = await Promise.all(templates.map((t) => buildLineItemsFromTemplate(t, areaSqft.value)))
+    const built = await Promise.all(templates.map((t) => buildLineItemsFromTemplate(t, areaSqft.value, Number(perimeterFt.value) || 0)))
     const line_items = built.flatMap((b) => b.line_items)
     const cost_components = built[0]?.cost_components || []
     setEstimateDraft({
@@ -275,6 +286,7 @@ async function goNext() {
       area_value: areaMode.value === "lxw" ? areaSqft.value : Number(areaValue.value),
       area_unit: areaMode.value === "lxw" ? "Sqft" : areaMode.value,
       area_sqft: areaSqft.value,
+      perimeter_ft: Number(perimeterFt.value) || null,
       duration: duration.value,
       line_items,
       cost_components,
@@ -586,10 +598,23 @@ async function goNext() {
           <span class="text-primary/60 text-xs">computed</span>
         </div>
 
-        <label class="block">
-          <span class="text-sm text-muted mb-1.5 block">Estimated Duration <span class="text-xs text-muted">(optional)</span></span>
-          <input v-model="duration" type="text" placeholder="e.g. 30 days, 6 weeks" class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-        </label>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <label class="block">
+            <span class="text-sm text-muted mb-1.5 block">Perimeter (ft) <span class="text-xs text-muted">(optional)</span></span>
+            <input
+              v-model="perimeterFt"
+              type="number"
+              min="0"
+              placeholder="e.g. 420"
+              class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <p class="text-xs text-muted mt-1">Only needed if this project has boundary-length items (fencing, edging, boundary planting).</p>
+          </label>
+          <label class="block">
+            <span class="text-sm text-muted mb-1.5 block">Estimated Duration <span class="text-xs text-muted">(optional)</span></span>
+            <input v-model="duration" type="text" placeholder="e.g. 30 days, 6 weeks" class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          </label>
+        </div>
       </div>
 
       <div class="bg-surface border border-border rounded-xl p-5">
@@ -598,6 +623,7 @@ async function goNext() {
           <dl class="space-y-3 sm:pr-6">
             <div class="flex items-center justify-between py-0.5"><dt class="text-muted">Category</dt><dd class="font-medium text-foreground">{{ selectedCategory || "—" }}</dd></div>
             <div class="flex items-center justify-between py-0.5"><dt class="text-muted">Area</dt><dd class="font-medium text-foreground tabular-nums">{{ areaSqft > 0 ? areaSqft.toLocaleString("en-IN") + " Sq.ft" : "—" }}</dd></div>
+            <div v-if="Number(perimeterFt) > 0" class="flex items-center justify-between py-0.5"><dt class="text-muted">Perimeter</dt><dd class="font-medium text-foreground tabular-nums">{{ Number(perimeterFt).toLocaleString("en-IN") }} ft</dd></div>
           </dl>
           <dl class="space-y-3 sm:pl-6">
             <div class="flex items-center justify-between py-0.5">
