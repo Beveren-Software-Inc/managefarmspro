@@ -28,7 +28,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Type",
-   "options": "Material\nLabour\nMachinery\nManual\nOverhead"
+   "options": "Material\nPlant\nLabour\nMachinery\nManual\nOverhead"
   },
   {
    "description": "Label shown when this is a manual placeholder line with no linked Item (e.g. \"Design and Layout\")",

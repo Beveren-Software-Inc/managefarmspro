@@ -10,6 +10,7 @@ const props = defineProps({
   modelValue: { type: String, default: "" },
   options: { type: Array, default: () => [] }, // [{ value, label, ...extra }]
   placeholder: { type: String, default: "" },
+  disabled: { type: Boolean, default: false },
 })
 const emit = defineEmits(["update:modelValue", "select"])
 
@@ -24,10 +25,12 @@ const filteredOptions = computed(() => {
 })
 
 function onFocus() {
+  if (props.disabled) return
   search.value = ""
   open.value = true
 }
 function onInput(e) {
+  if (props.disabled) return
   search.value = e.target.value
   open.value = true
 }
@@ -53,10 +56,11 @@ function clear() {
       type="text"
       :value="open ? search : selectedLabel"
       :placeholder="placeholder"
+      :disabled="disabled"
       @focus="onFocus"
       @input="onInput"
       @blur="onBlur"
-      class="w-full pl-3 pr-16 py-2.5 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
+      class="w-full pl-3 pr-16 py-2.5 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
     />
     <button
       v-if="modelValue"

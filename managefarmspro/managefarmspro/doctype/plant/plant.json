@@ -1,0 +1,101 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "format:{planting_code}-{plant_type}",
+ "creation": "2026-08-08 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "planting_code",
+  "common_name",
+  "scientific_name",
+  "column_break_1",
+  "plant_type",
+  "spacing_ft",
+  "section_break_1",
+  "item"
+ ],
+ "fields": [
+  {
+   "description": "Short code from the client's plant master (e.g. CON, MAI) — not unique alone, since the same code can appear under more than one Plant Type with different spacing (e.g. Moringa as a Small Tree vs. as a Mulch Plant).",
+   "fieldname": "planting_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Planting Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "common_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Common Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "scientific_name",
+   "fieldtype": "Data",
+   "label": "Scientific Name"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "plant_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Plant Type",
+   "options": "Plant Type",
+   "reqd": 1
+  },
+  {
+   "description": "Feet — matches Estimate Area/Length/Width convention directly, no unit conversion. Drives the live plant-capacity check.",
+   "fieldname": "spacing_ft",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Spacing (ft)",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "Blank until this species has a real priced Item — created on demand when a real category/estimate needs it, not speculatively for every species.",
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "Item",
+   "options": "Item"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-08 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Managefarmspro",
+ "name": "Plant",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "planting_code,common_name",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "common_name"
+}

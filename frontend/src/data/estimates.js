@@ -55,34 +55,34 @@ export function toSqft(unit, value) {
   return Math.round((Number(value) || 0) * (AREA_TO_SQFT[unit] || 1))
 }
 
-// Plant Quantity = Area / (Row Spacing x Plant Spacing) — the one formula
-// already specified in the approved plan (Section 3). Pits are treated as
-// one per plant. Shared between Category Template Item AND Category Template
-// Activity rows — both carry the same consumption_basis/consumption_rate
-// shape, so Labour's "Total Quantity" (before dividing by Standard Output)
-// uses this exact same formula, not a separate one.
-//
-// Row/Plant Spacing are in FEET, matching areaSqft directly — no unit
-// conversion. Confirmed against the original requirement doc's own worked
-// example (Area 10,000 sqft, Spacing 5ft x 5ft -> 400 plants = 10,000 / 25,
-// no conversion). A prior turn introduced an sqft->sqm conversion here on
-// the (wrong) assumption the "(m)" field label was authoritative — reverted;
-// the label was the actual bug (see project_category.json / spacingLabel()),
-// not this formula.
+// Per Plant/Per Pit basis is no longer auto-derived here — Category Template
+// Defaults' default_row_spacing/default_plant_spacing/default_pit_size were
+// removed (see project_category.json, plant-capacity-proposal.md Section 4):
+// spacing now lives on the Plant master, one record per species, not one
+// flat pair per category. A Category Template Item row on this basis has no
+// formula left to compute from and returns 0 — same behavior every real
+// category already had before this change, since none had usable spacing
+// set (confirmed live: only test/scratch data ever populated these fields).
+// Real plant quantities are entered directly on the Estimate via Add Line's
+// Plant picker (Type -> Plant cascade) with the live area-budget capacity
+// check (Builder), not derived from a template at apply-time — the
+// mechanism this basis used to lean on didn't generalize past a single
+// spacing pair per category, so it isn't being replaced with an equivalent,
+// it's being replaced with real per-species data entered where the
+// decision actually gets made.
 //
 // Per Running Foot: confirmed with the client — they do measure boundary
 // perimeter for fencing/edging/boundary-planting jobs, so this is real, not
 // speculative. perimeterFt is Estimate.perimeter_ft, entered once in Setup
-// alongside area, same convention as area/spacing (feet, no conversion).
-function deriveQuantity(templateItem, template, areaSqft, perimeterFt) {
+// alongside area, same convention as area (feet, no conversion).
+function deriveQuantity(templateItem, areaSqft, perimeterFt) {
   const rate = templateItem.consumption_rate || 0
-  const plantQty = template.default_row_spacing && template.default_plant_spacing ? areaSqft / (template.default_row_spacing * template.default_plant_spacing) : 0
   switch (templateItem.consumption_basis) {
     case "Per Sqft":
       return areaSqft * rate
     case "Per Plant":
     case "Per Pit":
-      return plantQty * rate
+      return 0
     case "Per Running Foot":
       return (perimeterFt || 0) * rate
     case "Fixed Quantity":
@@ -114,7 +114,7 @@ export async function buildLineItemsFromTemplate(template, areaSqft, perimeterFt
       return { section, line_type: ti.line_type || "Manual", source_item: null, description: ti.description, quantity: 1, uom: ti.uom || "-", rate: 0, internal_rate: 0, amount: 0, is_override: 0, is_manual: 1 }
     }
     const opt = byCode[ti.item]
-    const quantity = Math.round(deriveQuantity(ti, template, areaSqft, perimeterFt) * 1000) / 1000
+    const quantity = Math.round(deriveQuantity(ti, areaSqft, perimeterFt) * 1000) / 1000
     const rate = opt?.unit_price || 0
     return {
       section,
@@ -151,7 +151,7 @@ export async function buildLineItemsFromTemplate(template, areaSqft, perimeterFt
       return { section, line_type: "Labour", source_item: row.item || null, description, quantity: 1, uom: "Days", rate, internal_rate: Math.round(rate * 0.8), amount: Math.round(rate * 100) / 100, is_override: 0, is_manual: 1 }
     }
 
-    const totalQuantity = deriveQuantity(row, template, areaSqft, perimeterFt)
+    const totalQuantity = deriveQuantity(row, areaSqft, perimeterFt)
     const labourDays = Math.round((totalQuantity / standardOutput) * 1000) / 1000
     return {
       section,
@@ -190,6 +190,8 @@ export async function createEstimate(draft) {
     area_value: draft.area_value,
     area_unit: draft.area_unit,
     area_sqft: draft.area_sqft,
+    length_ft: draft.length_ft || null,
+    width_ft: draft.width_ft || null,
     perimeter_ft: draft.perimeter_ft || null,
     duration: draft.duration,
     line_items: draft.line_items,

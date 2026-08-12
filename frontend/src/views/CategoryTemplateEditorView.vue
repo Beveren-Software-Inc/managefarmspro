@@ -13,6 +13,7 @@ import {
   fetchAllItemOptions,
   LINE_TYPES,
   LINE_TYPE_ITEM_GROUPS,
+  TYPE_COLORS,
   CONSUMPTION_BASES,
 } from "@/data/category_templates.js"
 import { isSystemManager } from "@/session.js"
@@ -74,14 +75,6 @@ function itemOptionsForType(lineType) {
 }
 function activityOption(code) {
   return activityOptions.value.find((o) => o.value === code) || null
-}
-
-const TYPE_COLORS = {
-  Material: "bg-warning-soft text-warning",
-  Labour: "bg-info-soft text-info",
-  Machinery: "bg-positive-soft text-positive",
-  Manual: "bg-surface-muted text-muted",
-  Overhead: "bg-accent-soft text-accent",
 }
 
 // ---- Standard Items ----
@@ -149,9 +142,6 @@ async function doSave() {
   try {
     await updateCategoryTemplate(tmpl.name, {
       description: tmpl.description,
-      default_row_spacing: tmpl.default_row_spacing,
-      default_plant_spacing: tmpl.default_plant_spacing,
-      default_pit_size: tmpl.default_pit_size,
       default_supervision_type: tmpl.default_supervision_type,
       default_supervision_value: tmpl.default_supervision_value,
       items: tmpl.items,
@@ -218,19 +208,7 @@ async function doSave() {
         <span class="text-sm text-muted mb-1.5 block">Description</span>
         <textarea v-model="tmpl.description" rows="2" class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"></textarea>
       </label>
-      <div class="grid sm:grid-cols-3 gap-4">
-        <label class="block">
-          <span class="text-sm text-muted mb-1.5 block">Row Spacing (ft)</span>
-          <input v-model.number="tmpl.default_row_spacing" type="number" step="0.1" class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-        </label>
-        <label class="block">
-          <span class="text-sm text-muted mb-1.5 block">Plant Spacing (ft)</span>
-          <input v-model.number="tmpl.default_plant_spacing" type="number" step="0.1" class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-        </label>
-        <label class="block">
-          <span class="text-sm text-muted mb-1.5 block">Pit / Bed Size</span>
-          <input v-model="tmpl.default_pit_size" type="text" class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-        </label>
+      <div class="grid sm:grid-cols-2 gap-4">
         <label class="block">
           <span class="text-sm text-muted mb-1.5 block">Default Supervision</span>
           <FilterCombobox v-model="tmpl.default_supervision_type" :options="['Fixed', 'Percent']" />

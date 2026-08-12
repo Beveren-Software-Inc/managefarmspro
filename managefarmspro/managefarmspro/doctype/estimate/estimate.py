@@ -164,6 +164,15 @@ def convert_to_project(estimate):
 @frappe.whitelist()
 def amend_estimate(estimate):
 	doc = frappe.get_doc("Estimate", estimate)
+	# Mirrors the frontend's canAmend computed (`!linkedProject.value`) — but
+	# that's a UI-only gate; confirmed live that calling this function directly
+	# bypasses it entirely, cancelling an Estimate a real Farm Project still
+	# points to with nothing to catch it (Farm Project isn't submittable, so
+	# Frappe's own submitted-linked-doc check never triggers). Enforced here so
+	# it holds regardless of caller, same principle as convert_to_project's own
+	# docstatus/customer/plot guards above.
+	if frappe.db.exists("Farm Project", {"estimate": doc.name}):
+		frappe.throw(_("This Estimate has already been converted to a Project and can no longer be revised."))
 	new_doc = frappe.copy_doc(doc)
 	new_doc.amended_from = doc.name
 	new_doc.docstatus = 0

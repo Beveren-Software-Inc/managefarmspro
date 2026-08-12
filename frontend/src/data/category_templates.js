@@ -17,9 +17,6 @@ export async function fetchCategoryTemplates() {
     name: d.name,
     category_name: d.category_name,
     description: d.description,
-    default_row_spacing: d.default_row_spacing,
-    default_plant_spacing: d.default_plant_spacing,
-    default_pit_size: d.default_pit_size,
     default_supervision_type: d.default_supervision_type,
     default_supervision_value: d.default_supervision_value,
     itemCount: (d.items || []).length,
@@ -54,7 +51,11 @@ export async function createCategoryTemplate(categoryName) {
   return call("frappe.client.insert", { doc: { doctype: "Project Category", category_name: categoryName } })
 }
 
-export const LINE_TYPES = ["Material", "Labour", "Machinery", "Manual", "Overhead"]
+// Plant is its own first-class type, not a Material sub-mode — it never
+// resolves through LINE_TYPE_ITEM_GROUPS below (no Item Group search; lines
+// are sourced entirely through the dedicated Plant Type -> Plant picker), so
+// it's deliberately absent from that map, same as Manual.
+export const LINE_TYPES = ["Material", "Plant", "Labour", "Machinery", "Manual", "Overhead"]
 export const CONSUMPTION_BASES = ["Per Plant", "Per Pit", "Per Sqft", "Per Running Foot", "Fixed Quantity"]
 
 // Maps a line's type to the real Item Groups it should search — confirmed
@@ -68,6 +69,21 @@ export const LINE_TYPE_ITEM_GROUPS = {
   Labour: ["Labor"],
   Machinery: ["Equipment", "Tools"],
   Overhead: ["Services", "Farm Services", "Miscellaneous"],
+}
+
+// Single source of truth for the type badge shown next to every line item —
+// previously duplicated verbatim in EstimateBuilderView.vue,
+// CategoryTemplateEditorView.vue, and EstimateSetupView.vue, which meant
+// adding a new type (Plant) risked being missed in one of the three and
+// silently falling back to the generic gray badge there. Centralized here,
+// same reasoning as LINE_TYPES/LINE_TYPE_ITEM_GROUPS above.
+export const TYPE_COLORS = {
+  Material: "bg-warning-soft text-warning",
+  Plant: "bg-primary-soft text-primary",
+  Labour: "bg-info-soft text-info",
+  Machinery: "bg-positive-soft text-positive",
+  Manual: "bg-surface-muted text-muted",
+  Overhead: "bg-accent-soft text-accent",
 }
 
 export async function fetchActivities() {
@@ -94,13 +110,6 @@ export async function fetchAllItemOptions() {
   return rows.map((r) => ({ value: r.name, label: r.item_name, item_group: r.item_group, stock_uom: r.stock_uom, unit_price: priceByCode[r.name] || 0 }))
 }
 
-export function spacingLabel(t) {
-  if (t.default_row_spacing && t.default_plant_spacing) return `${t.default_row_spacing}ft x ${t.default_plant_spacing}ft`
-  return "—"
-}
-export function pitSizeLabel(t) {
-  return t.default_pit_size || "—"
-}
 export function supervisionLabel(t) {
   if (!t.default_supervision_value) return "—"
   return t.default_supervision_type === "Fixed" ? `Fixed ₹${t.default_supervision_value}` : `${t.default_supervision_value}% of cost`

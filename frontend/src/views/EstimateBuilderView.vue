@@ -22,7 +22,8 @@ import {
 import { fetchCustomers } from "@/data/customers.js"
 import { fetchPlotsForCustomer, fetchClusters } from "@/data/plots.js"
 import { estimateDraft, clearEstimateDraft } from "@/data/estimateDraft.js"
-import { LINE_TYPES, LINE_TYPE_ITEM_GROUPS, fetchAllItemOptions } from "@/data/category_templates.js"
+import { LINE_TYPES, LINE_TYPE_ITEM_GROUPS, TYPE_COLORS, fetchAllItemOptions } from "@/data/category_templates.js"
+import { fetchPlantTypes, fetchPlants } from "@/data/plants.js"
 import { formatCurrency } from "@/format.js"
 
 const route = useRoute()
@@ -59,6 +60,9 @@ function groupLineItems(lineItems, sectionDiscounts) {
     bySection[key].lines.push({
       line_type: li.line_type,
       source_item: li.source_item,
+      source_plant: li.source_plant,
+      plant_type: li.plant_type,
+      spacing_ft: li.spacing_ft,
       description: li.description,
       quantity: li.quantity,
       uom: li.uom,
@@ -88,6 +92,8 @@ function loadIntoLocalState(d) {
 }
 
 const itemOptions = ref([])
+const plantTypeOptions = ref([])
+const plantOptions = ref([])
 
 // Vue Router reuses this component instance across /estimates/local ->
 // /estimates/EST-XXXX navigations (same matched route, param-only change),
@@ -124,6 +130,7 @@ async function loadForRoute() {
 
 onMounted(async () => {
   itemOptions.value = await fetchAllItemOptions()
+  ;[plantTypeOptions.value, plantOptions.value] = await Promise.all([fetchPlantTypes(), fetchPlants()])
   loadForRoute()
 })
 watch(() => route.params.id, loadForRoute)
@@ -136,6 +143,9 @@ function flattenLocalState() {
         section: s.name,
         line_type: l.line_type,
         source_item: l.source_item || null,
+        source_plant: l.source_plant || null,
+        plant_type: l.plant_type || null,
+        spacing_ft: l.spacing_ft || null,
         description: l.description,
         quantity: l.quantity,
         uom: l.uom,
@@ -168,7 +178,68 @@ const activeTab = ref("lineitems") // 'lineitems' | 'costing'
 const showInternalCost = ref(false)
 const collapsedSections = ref({})
 const addLineSection = ref(null)
-const newLine = reactive({ type: "Material", item: null, description: "", qty: "", unit: "", rate: "", internalRate: "" })
+// Plant is its own line_type (LINE_TYPES) — picking it swaps the description
+// combobox for the Plant Type -> Plant cascade below, same idea as before
+// but reached directly through the Type dropdown rather than a separate
+// Item/Plant toggle nested under Material.
+const newLine = reactive({ type: "Material", item: null, description: "", qty: "", unit: "", rate: "", internalRate: "", plantType: null, plant: null, spacingFt: null })
+
+const plantOptionsForType = computed(() => plantOptions.value.filter((p) => p.plant_type === newLine.plantType))
+function onPlantTypeChange() {
+  newLine.plant = null
+}
+function pickPlant(plantName) {
+  newLine.plant = plantName
+  const p = plantOptions.value.find((o) => o.value === plantName)
+  if (!p) return
+  newLine.description = p.label
+  newLine.spacingFt = p.spacing_ft
+  const linkedItem = p.item ? itemOptions.value.find((o) => o.value === p.item) : null
+  newLine.unit = linkedItem?.stock_uom || "Nos"
+  newLine.rate = linkedItem?.unit_price || ""
+}
+
+// ---- Live plant capacity (Option B — area-budget approximation, see
+// plant-capacity-proposal.md) ----
+// Deliberately advisory only: this NEVER disables qty entry or the commit
+// button, even when over budget — a real site's usable capacity can exceed
+// what a flat area-division can know about (irregular plots, on-the-ground
+// judgment). It's a planning hint, not a hard limit, per explicit sign-off.
+//
+// A single shared budget across every plant type already on the Estimate,
+// not a per-type sub-budget — earlier picks consume capacity that later
+// picks then see less of, exactly as spec'd. Reads `sections` (reactive),
+// so it recomputes automatically on every add/remove/qty edit — no manual
+// recalculation wiring needed.
+const estimateLengthFt = computed(() => (isLocalMode.value ? estimateDraft.length_ft : doc.value?.length_ft))
+const estimateWidthFt = computed(() => (isLocalMode.value ? estimateDraft.width_ft : doc.value?.width_ft))
+const plotBudgetSqft = computed(() => {
+  const l = Number(estimateLengthFt.value) || 0
+  const w = Number(estimateWidthFt.value) || 0
+  return l > 0 && w > 0 ? l * w : null // null = dimensions missing, not "zero budget"
+})
+const consumedPlantSqft = computed(() =>
+  sections.reduce((total, s) => total + s.lines.reduce((t, l) => t + (l.source_plant && l.spacing_ft ? (l.quantity || 0) * l.spacing_ft ** 2 : 0), 0), 0),
+)
+const plantCapacityInfo = computed(() => {
+  if (newLine.type !== "Plant") return null
+  if (plotBudgetSqft.value === null) {
+    return { blocked: true, text: "Enter Length × Width in Setup to enable plant-capacity suggestions." }
+  }
+  const remaining = plotBudgetSqft.value - consumedPlantSqft.value
+  if (!newLine.spacingFt) {
+    return { blocked: false, text: `~${Math.max(0, Math.round(remaining)).toLocaleString("en-IN")} sqft of planting budget remaining on this plot.` }
+  }
+  const maxFit = Math.floor(remaining / newLine.spacingFt ** 2)
+  const warn = maxFit <= 0
+  return {
+    blocked: false,
+    warn,
+    text: warn
+      ? `Budget for this spacing is already used up — up to ~${Math.max(0, maxFit)} more may fit, as an estimate. You can still enter more if the real site supports it.`
+      : `Up to ~${maxFit} more may fit, as an estimate — not an exact count.`,
+  }
+})
 
 // One combobox, not a picker stacked on a separate description field: typing
 // searches the item master (filtered to the selected line type's Item
@@ -191,14 +262,6 @@ function pickAddLineItem(opt) {
   newLine.unit = opt.stock_uom || newLine.unit
   newLine.rate = opt.unit_price || newLine.rate
   addLineDropdownOpen.value = false
-}
-
-const TYPE_COLORS = {
-  Material: "bg-warning-soft text-warning",
-  Labour: "bg-info-soft text-info",
-  Machinery: "bg-positive-soft text-positive",
-  Manual: "bg-surface-muted text-muted",
-  Overhead: "bg-accent-soft text-accent",
 }
 
 // Revised lifecycle model — native docstatus/submit/amend, not a custom
@@ -238,19 +301,23 @@ function toggleSection(i) {
 }
 function openAddLine(i) {
   addLineSection.value = i
-  Object.assign(newLine, { type: "Material", item: null, description: "", qty: "", unit: "", rate: "", internalRate: "" })
+  Object.assign(newLine, { type: "Material", item: null, description: "", qty: "", unit: "", rate: "", internalRate: "", plantType: null, plant: null, spacingFt: null })
 }
 function commitLine(i) {
   if (!newLine.description || !newLine.qty || !newLine.rate) return
+  const isPlant = newLine.type === "Plant" && !!newLine.plant
   sections[i].lines.push({
     line_type: newLine.type,
-    source_item: newLine.item || null,
+    source_item: isPlant ? null : newLine.item || null,
+    source_plant: isPlant ? newLine.plant : null,
+    plant_type: isPlant ? newLine.plantType : null,
+    spacing_ft: isPlant ? newLine.spacingFt : null,
     description: newLine.description,
     quantity: Number(newLine.qty),
     uom: newLine.unit,
     rate: Number(newLine.rate),
     internal_rate: Number(newLine.internalRate) || Number(newLine.rate) * 0.8,
-    is_manual: !newLine.item,
+    is_manual: isPlant ? !plantOptions.value.find((o) => o.value === newLine.plant)?.item : !newLine.item,
     is_override: false,
   })
   addLineSection.value = null
@@ -263,6 +330,21 @@ function addSection() {
   sections.push({ name: "", discount: 0, lines: [] })
   const idx = sections.length - 1
   nextTick(() => sectionNameInputs.value[idx]?.focus())
+}
+// Empty sections (including ones created by accident) delete immediately —
+// nothing to lose. A section with real lines still in it needs a confirm,
+// same reasoning as every other destructive action in this view.
+const pendingRemoveSectionIdx = ref(null)
+function removeSection(sIdx) {
+  if (sections[sIdx].lines.length === 0) {
+    sections.splice(sIdx, 1)
+    return
+  }
+  pendingRemoveSectionIdx.value = sIdx
+}
+function confirmRemoveSection() {
+  sections.splice(pendingRemoveSectionIdx.value, 1)
+  pendingRemoveSectionIdx.value = null
 }
 // Editing a template-derived line's own fields flags it as diverged from the
 // template default — matches the plan's override layer (Section 5).
@@ -359,6 +441,8 @@ async function createNow() {
       area_value: estimateDraft.area_value,
       area_unit: estimateDraft.area_unit,
       area_sqft: estimateDraft.area_sqft,
+      length_ft: estimateDraft.length_ft,
+      width_ft: estimateDraft.width_ft,
       perimeter_ft: estimateDraft.perimeter_ft,
       duration: estimateDraft.duration,
       line_items: state.line_items,
@@ -799,25 +883,33 @@ async function confirmCancel() {
               <h4 v-else class="font-semibold text-foreground flex-1">{{ section.name }}</h4>
               <div v-if="section.discount > 0" class="text-xs text-warning font-medium mr-2">−{{ section.discount }}% ({{ formatCurrency(sectionDiscountAmount(section)) }})</div>
               <span class="text-sm font-semibold text-foreground tabular-nums">{{ formatCurrency(sectionSubtotal(section)) }}</span>
+              <button
+                v-if="isEditable"
+                @click.stop="removeSection(sIdx)"
+                class="text-muted hover:text-negative transition-colors p-1 rounded flex-shrink-0"
+                aria-label="Remove section"
+              >
+                <AppIcon name="trash" :size="14" />
+              </button>
             </div>
 
             <div v-if="!collapsedSections[sIdx]">
-              <table class="w-full text-sm">
+              <table class="w-full text-sm table-fixed">
                 <thead>
                   <tr class="text-left border-b border-border">
-                    <th class="font-normal text-muted px-4 py-2.5 w-5"></th>
+                    <th class="font-normal text-muted px-4 py-2.5 w-28"></th>
                     <th class="font-normal text-muted px-4 py-2.5">Description</th>
-                    <th class="font-normal text-muted px-4 py-2.5 text-right">Qty</th>
-                    <th class="font-normal text-muted px-4 py-2.5">Unit</th>
-                    <th class="font-normal text-muted px-4 py-2.5 text-right">Rate</th>
-                    <th class="font-normal text-muted px-4 py-2.5 text-right">Amount</th>
-                    <th v-if="showInternalCost" class="font-normal px-4 py-2.5 text-right bg-negative-soft/30"><span class="text-negative/70 text-[11px] font-semibold">INTERNAL Rate</span></th>
-                    <th v-if="showInternalCost" class="font-normal px-4 py-2.5 text-right bg-negative-soft/30"><span class="text-negative/70 text-[11px] font-semibold">INTERNAL Amt</span></th>
-                    <th class="font-normal text-muted px-3 py-2.5 w-8"></th>
+                    <th class="font-normal text-muted px-4 py-2.5 text-right w-24">Qty</th>
+                    <th class="font-normal text-muted px-4 py-2.5 w-24">Unit</th>
+                    <th class="font-normal text-muted px-4 py-2.5 text-right w-28">Rate</th>
+                    <th class="font-normal text-muted px-4 py-2.5 text-right w-28">Amount</th>
+                    <th v-if="showInternalCost" class="font-normal px-4 py-2.5 text-right bg-negative-soft/30 w-28"><span class="text-negative/70 text-[11px] font-semibold">INTERNAL Rate</span></th>
+                    <th v-if="showInternalCost" class="font-normal px-4 py-2.5 text-right bg-negative-soft/30 w-28"><span class="text-negative/70 text-[11px] font-semibold">INTERNAL Amt</span></th>
+                    <th class="font-normal text-muted px-3 py-2.5 w-16"></th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-border">
-                  <tr v-for="(line, lIdx) in section.lines" :key="lIdx" class="hover:bg-surface-muted/20 transition-colors" :class="line.is_override ? 'bg-accent-soft/20' : ''">
+                  <tr v-for="(line, lIdx) in section.lines" :key="lIdx" class="hover:bg-surface-muted/20 transition-colors align-top" :class="line.is_override ? 'bg-accent-soft/20' : ''">
                     <td class="px-4 py-2.5">
                       <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide" :class="TYPE_COLORS[line.line_type] || 'bg-surface-muted text-muted'">{{ (line.line_type || "?").charAt(0) }}</span>
                     </td>
@@ -830,12 +922,12 @@ async function confirmCancel() {
                       </div>
                     </td>
                     <td class="px-4 py-2.5 text-right tabular-nums">
-                      <input v-if="isEditable" v-model.number="line.quantity" type="number" step="1" @change="markOverridden(line)" class="w-20 text-sm bg-transparent border-0 focus:outline-none focus:bg-surface rounded px-1 text-right tabular-nums" />
+                      <input v-if="isEditable" v-model.number="line.quantity" type="number" step="1" @change="markOverridden(line)" class="w-full text-sm bg-transparent border-0 focus:outline-none focus:bg-surface rounded px-1 text-right tabular-nums" />
                       <span v-else class="text-muted">{{ line.quantity }}</span>
                     </td>
                     <td class="px-4 py-2.5 text-muted">{{ line.uom }}</td>
                     <td class="px-4 py-2.5 text-right tabular-nums">
-                      <input v-if="isEditable" v-model.number="line.rate" type="number" @change="markOverridden(line)" class="w-20 text-sm bg-transparent border-0 focus:outline-none focus:bg-surface rounded px-1 text-right tabular-nums" />
+                      <input v-if="isEditable" v-model.number="line.rate" type="number" @change="markOverridden(line)" class="w-full text-sm bg-transparent border-0 focus:outline-none focus:bg-surface rounded px-1 text-right tabular-nums" />
                       <span v-else class="text-muted">{{ formatCurrency(line.rate) }}</span>
                     </td>
                     <td class="px-4 py-2.5 text-right font-medium text-foreground tabular-nums">{{ formatCurrency((line.quantity || 0) * (line.rate || 0)) }}</td>
@@ -848,13 +940,42 @@ async function confirmCancel() {
                     </td>
                   </tr>
 
-                  <tr v-if="addLineSection === sIdx" class="bg-primary-soft/30">
+                  <tr v-if="addLineSection === sIdx" class="bg-primary-soft/30 align-top">
                     <td class="px-4 py-2.5">
-                      <select v-model="newLine.type" class="text-xs rounded-md border border-border bg-surface py-1 px-1.5 focus:outline-none focus:ring-1 focus:ring-primary/30 w-24">
+                      <select v-model="newLine.type" class="text-xs rounded-md border border-border bg-surface py-1 px-1.5 focus:outline-none focus:ring-1 focus:ring-primary/30 w-full">
                         <option v-for="t in LINE_TYPES" :key="t">{{ t }}</option>
                       </select>
                     </td>
-                    <td class="px-4 py-2.5 min-w-[12rem] relative">
+                    <td v-if="newLine.type === 'Plant'" class="px-4 py-2.5">
+                      <!-- Stacked, not side-by-side — this column's real width varies a
+                      lot with the page layout (e.g. much narrower once a Costing Summary
+                      sidebar is present), and two comboboxes sharing one row never had
+                      enough room to stay legible. Stacking is robust regardless of
+                      container width. -->
+                      <div class="space-y-1.5">
+                        <RecordPicker
+                          :model-value="newLine.plantType"
+                          :options="plantTypeOptions"
+                          placeholder="Plant Type…"
+                          @update:modelValue="
+                            (v) => {
+                              newLine.plantType = v
+                              onPlantTypeChange()
+                            }
+                          "
+                        />
+                        <RecordPicker
+                          :model-value="newLine.plant"
+                          :options="plantOptionsForType"
+                          :placeholder="newLine.plantType ? 'Select plant…' : 'Pick a type first'"
+                          :disabled="!newLine.plantType"
+                          @update:modelValue="pickPlant"
+                        />
+                      </div>
+                      <p v-if="newLine.spacingFt" class="text-[11px] text-muted mt-1">Spacing: {{ newLine.spacingFt }}ft</p>
+                      <p v-if="plantCapacityInfo" class="text-[11px] mt-1" :class="plantCapacityInfo.blocked || plantCapacityInfo.warn ? 'text-warning' : 'text-muted'">{{ plantCapacityInfo.text }}</p>
+                    </td>
+                    <td v-else class="px-4 py-2.5 relative">
                       <input
                         v-model="newLine.description"
                         type="text"
@@ -881,17 +1002,17 @@ async function confirmCancel() {
                       </ul>
                     </td>
                     <td class="px-4 py-2.5">
-                      <input v-model="newLine.qty" type="number" min="0" step="1" placeholder="Qty" class="w-16 text-sm rounded-lg border border-border bg-surface px-2 py-1.5 text-right focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                      <input v-model="newLine.qty" type="number" min="0" step="1" placeholder="Qty" class="w-full text-sm rounded-lg border border-border bg-surface px-2 py-1.5 text-right focus:outline-none focus:ring-2 focus:ring-primary/30" />
                     </td>
                     <td class="px-4 py-2.5">
-                      <input v-model="newLine.unit" type="text" placeholder="Unit" class="w-16 text-sm rounded-lg border border-border bg-surface px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                      <input v-model="newLine.unit" type="text" placeholder="Unit" class="w-full text-sm rounded-lg border border-border bg-surface px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30" />
                     </td>
                     <td class="px-4 py-2.5">
-                      <input v-model="newLine.rate" type="number" min="0" placeholder="Rate" class="w-20 text-sm rounded-lg border border-border bg-surface px-2 py-1.5 text-right focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                      <input v-model="newLine.rate" type="number" min="0" placeholder="Rate" class="w-full text-sm rounded-lg border border-border bg-surface px-2 py-1.5 text-right focus:outline-none focus:ring-2 focus:ring-primary/30" />
                     </td>
                     <td class="px-4 py-2.5 text-right text-muted tabular-nums text-sm">{{ newLine.qty && newLine.rate ? formatCurrency(newLine.qty * newLine.rate) : "—" }}</td>
                     <td v-if="showInternalCost" class="px-4 py-2.5 bg-negative-soft/20">
-                      <input v-model="newLine.internalRate" type="number" min="0" placeholder="Int. Rate" class="w-20 text-sm rounded-lg border border-border bg-surface px-2 py-1.5 text-right focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                      <input v-model="newLine.internalRate" type="number" min="0" placeholder="Int. Rate" class="w-full text-sm rounded-lg border border-border bg-surface px-2 py-1.5 text-right focus:outline-none focus:ring-2 focus:ring-primary/30" />
                     </td>
                     <td v-if="showInternalCost" class="px-4 py-2.5 bg-negative-soft/20"></td>
                     <td class="px-3 py-2.5">
@@ -1275,6 +1396,15 @@ async function confirmCancel() {
       cancel-label="Go Back"
       @confirm="confirmCancel"
       @cancel="showConfirmCancel = false"
+    />
+    <ConfirmDialog
+      v-if="pendingRemoveSectionIdx !== null"
+      title="Remove this section?"
+      :message="`'${sections[pendingRemoveSectionIdx]?.name}' has ${sections[pendingRemoveSectionIdx]?.lines.length} line item(s) — removing the section removes them too.`"
+      confirm-label="Remove Section"
+      cancel-label="Go Back"
+      @confirm="confirmRemoveSection"
+      @cancel="pendingRemoveSectionIdx = null"
     />
   </div>
 </template>

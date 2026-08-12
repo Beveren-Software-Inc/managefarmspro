@@ -9,6 +9,9 @@
   "section",
   "line_type",
   "source_item",
+  "source_plant",
+  "plant_type",
+  "spacing_ft",
   "description",
   "quantity",
   "uom",
@@ -31,13 +34,37 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Type",
-   "options": "Material\nLabour\nMachinery\nManual\nOverhead"
+   "options": "Material\nPlant\nLabour\nMachinery\nManual\nOverhead"
   },
   {
    "fieldname": "source_item",
    "fieldtype": "Link",
    "label": "Item",
    "options": "Item"
+  },
+  {
+   "description": "Blank for non-plant lines. Set when this line was added via the Plant picker (Add Line), not the general Item picker.",
+   "fieldname": "source_plant",
+   "fieldtype": "Link",
+   "label": "Plant",
+   "options": "Plant"
+  },
+  {
+   "fetch_from": "source_plant.plant_type",
+   "fieldname": "plant_type",
+   "fieldtype": "Link",
+   "label": "Plant Type",
+   "options": "Plant Type",
+   "read_only": 1
+  },
+  {
+   "description": "Feet — cached from the linked Plant at pick time. Drives the live plant-capacity check.",
+   "fetch_from": "source_plant.spacing_ft",
+   "fieldname": "spacing_ft",
+   "fieldtype": "Float",
+   "label": "Spacing (ft)",
+   "precision": "2",
+   "read_only": 1
   },
   {
    "fieldname": "description",

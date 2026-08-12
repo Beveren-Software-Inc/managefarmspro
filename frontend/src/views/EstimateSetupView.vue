@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from "vue"
 import { useRouter, useRoute } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
 import RecordPicker from "@/components/RecordPicker.vue"
-import { fetchCategoryTemplates, fetchCategoryTemplate, CATEGORY_ICONS, spacingLabel, pitSizeLabel, supervisionLabel } from "@/data/category_templates.js"
+import { fetchCategoryTemplates, fetchCategoryTemplate, CATEGORY_ICONS, supervisionLabel, TYPE_COLORS } from "@/data/category_templates.js"
 import { fetchCustomers } from "@/data/customers.js"
 import { fetchPlotsForCustomer } from "@/data/plots.js"
 import { buildLineItemsFromTemplate, fetchEstimateDetail, saveEstimate, toSqft } from "@/data/estimates.js"
@@ -53,11 +53,15 @@ onMounted(async () => {
         prospectName.value = doc.client_name || ""
         prospectLocation.value = doc.location || ""
       }
-      // Stored data only keeps area_value + area_unit, never whether the
-      // original entry was Length×Width — so edit mode starts from whatever
-      // unit is on file (never back into "lxw"), which is all the data
-      // actually supports.
-      if (["Acre", "Cent", "Sqft"].includes(doc.area_unit)) {
+      // length_ft/width_ft are only ever populated when the original entry
+      // was Length×Width (see goNext()) — their presence is what lets edit
+      // mode correctly return to "lxw" instead of falling back to Sqft, now
+      // that the data to do so actually exists.
+      if (doc.length_ft && doc.width_ft) {
+        areaMode.value = "lxw"
+        areaLength.value = doc.length_ft
+        areaWidth.value = doc.width_ft
+      } else if (["Acre", "Cent", "Sqft"].includes(doc.area_unit)) {
         areaMode.value = doc.area_unit
         areaValue.value = doc.area_value
       }
@@ -110,14 +114,6 @@ function toggleCategory(name) {
 }
 function removeSelectedCategory(name) {
   selectedCategories.value = selectedCategories.value.filter((n) => n !== name)
-}
-
-const TYPE_COLORS = {
-  Material: "bg-warning-soft text-warning",
-  Labour: "bg-info-soft text-info",
-  Machinery: "bg-positive-soft text-positive",
-  Manual: "bg-surface-muted text-muted",
-  Overhead: "bg-accent-soft text-accent",
 }
 
 // ── Step 1: Client ─────────────────────────────────────────────
@@ -244,6 +240,8 @@ async function goNext() {
         area_value: areaMode.value === "lxw" ? areaSqft.value : Number(areaValue.value),
         area_unit: areaMode.value === "lxw" ? "Sqft" : areaMode.value,
         area_sqft: areaSqft.value,
+        length_ft: areaMode.value === "lxw" ? Number(areaLength.value) || null : null,
+        width_ft: areaMode.value === "lxw" ? Number(areaWidth.value) || null : null,
         perimeter_ft: Number(perimeterFt.value) || null,
         duration: duration.value,
       }
@@ -286,6 +284,8 @@ async function goNext() {
       area_value: areaMode.value === "lxw" ? areaSqft.value : Number(areaValue.value),
       area_unit: areaMode.value === "lxw" ? "Sqft" : areaMode.value,
       area_sqft: areaSqft.value,
+      length_ft: areaMode.value === "lxw" ? Number(areaLength.value) || null : null,
+      width_ft: areaMode.value === "lxw" ? Number(areaWidth.value) || null : null,
       perimeter_ft: Number(perimeterFt.value) || null,
       duration: duration.value,
       line_items,
@@ -371,7 +371,7 @@ async function goNext() {
             </div>
             <div class="min-w-0 flex-1">
               <p class="font-medium text-foreground text-sm leading-tight">{{ t.category_name }}</p>
-              <p class="text-xs text-muted mt-0.5 truncate">Spacing: {{ spacingLabel(t) }}</p>
+              <p class="text-xs text-muted mt-0.5 truncate">{{ t.itemCount }} item{{ t.itemCount === 1 ? "" : "s" }} · {{ t.activityCount }} activit{{ t.activityCount === 1 ? "y" : "ies" }}</p>
             </div>
             <div
               class="flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors"
@@ -405,15 +405,7 @@ async function goNext() {
           <span class="font-medium text-foreground text-sm">Template Preview — {{ selectedTemplate.category_name }}</span>
         </div>
 
-        <div class="grid grid-cols-3 gap-px bg-border border-b border-border">
-          <div class="bg-surface px-4 py-3">
-            <p class="text-[11px] text-muted uppercase tracking-wide font-medium">Spacing</p>
-            <p class="text-sm font-medium text-foreground mt-0.5">{{ spacingLabel(selectedTemplate) }}</p>
-          </div>
-          <div class="bg-surface px-4 py-3">
-            <p class="text-[11px] text-muted uppercase tracking-wide font-medium">Pit Size</p>
-            <p class="text-sm font-medium text-foreground mt-0.5">{{ pitSizeLabel(selectedTemplate) }}</p>
-          </div>
+        <div class="bg-border border-b border-border">
           <div class="bg-surface px-4 py-3">
             <p class="text-[11px] text-muted uppercase tracking-wide font-medium">Supervision</p>
             <p class="text-sm font-medium text-foreground mt-0.5">{{ supervisionLabel(selectedTemplate) }}</p>

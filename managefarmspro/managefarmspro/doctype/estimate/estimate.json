@@ -22,6 +22,8 @@
   "area_value",
   "area_unit",
   "area_sqft",
+  "length_ft",
+  "width_ft",
   "perimeter_ft",
   "section_break_lines",
   "line_items",
@@ -128,6 +130,20 @@
    "label": "Area (Sqft)",
    "precision": "2",
    "read_only": 1
+  },
+  {
+   "description": "Real plot length, in feet — only populated when Setup's Area input mode is Length x Width; blank for Acres/Cents/Sqft entries, since there's no rectangle to recover from those. Needed for plant-capacity packing checks on planting-heavy categories.",
+   "fieldname": "length_ft",
+   "fieldtype": "Float",
+   "label": "Length (ft)",
+   "precision": "2"
+  },
+  {
+   "description": "Real plot width, in feet — see Length (ft).",
+   "fieldname": "width_ft",
+   "fieldtype": "Float",
+   "label": "Width (ft)",
+   "precision": "2"
   },
   {
    "description": "Boundary/perimeter length, in feet — matches Row/Plant Spacing's convention (Estimate area is Sqft, spacing/perimeter are Feet, no unit conversion between them). Drives Per Running Foot line items (fencing, edging, boundary planting). Optional — only needed for categories with boundary-length-driven items.",

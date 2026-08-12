@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
 import RecordPicker from "@/components/RecordPicker.vue"
-import { fetchCategoryTemplates, cloneCategoryTemplate, createCategoryTemplate, spacingLabel, pitSizeLabel, supervisionLabel, CATEGORY_ICONS } from "@/data/category_templates.js"
+import { fetchCategoryTemplates, cloneCategoryTemplate, createCategoryTemplate, supervisionLabel, CATEGORY_ICONS } from "@/data/category_templates.js"
 import { isSystemManager } from "@/session.js"
 
 const router = useRouter()
@@ -135,14 +135,6 @@ async function submitNewCategory() {
           </div>
 
           <div class="space-y-1.5 text-xs text-muted mb-4">
-            <div class="flex items-center gap-1.5">
-              <AppIcon name="filter" :size="12" />
-              <span>Spacing: {{ spacingLabel(t) }}</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <AppIcon name="layers" :size="12" />
-              <span>Pit: {{ pitSizeLabel(t) }}</span>
-            </div>
             <div class="flex items-center gap-1.5">
               <AppIcon name="percent" :size="12" />
               <span>Supervision: {{ supervisionLabel(t) }}</span>
