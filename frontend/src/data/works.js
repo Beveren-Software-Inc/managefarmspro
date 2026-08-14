@@ -56,10 +56,11 @@ export function materialLines(work) {
   return (work.material_table || []).map((r) => normalizeLine(r, "number_of_material_units", "material_unit"))
 }
 
-export async function fetchWorks({ search, status, plot, from, to, limitStart = 0 } = {}) {
+export async function fetchWorks({ search, status, plot, farmProject, from, to, limitStart = 0 } = {}) {
   const filters = []
   if (status) filters.push(["docstatus", "=", LABEL_DOCSTATUS[status]])
   if (plot) filters.push(["plot", "=", plot])
+  if (farmProject) filters.push(["farm_project", "=", farmProject])
   if (from && to) filters.push(["work_date", "between", [from, to]])
   else if (from) filters.push(["work_date", ">=", from])
   else if (to) filters.push(["work_date", "<=", to])

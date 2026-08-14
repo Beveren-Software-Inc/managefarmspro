@@ -1,65 +1,82 @@
 <script setup>
 import AppIcon from "@/components/AppIcon.vue"
-import { session, initials } from "@/session.js"
+import { session, initials, isSystemManager } from "@/session.js"
 
 defineProps({ mobileOpen: Boolean })
 defineEmits(["close"])
 
-const nav = [
-  { to: "/", label: "Dashboard", icon: "dashboard" },
-  { to: "/owners", label: "Customers", icon: "users" },
-  { to: "/plots", label: "Plots", icon: "plot" },
-  { to: "/works", label: "Works", icon: "work" },
-  { to: "/estimates", label: "Estimates", icon: "estimate" },
-  { to: "/invoices/generate", label: "Generate Invoice", icon: "invoice" },
-  { to: "/invoices", label: "Invoice History", icon: "file" },
-]
+const dashboardItem = { to: "/", label: "Dashboard", icon: "dashboard" }
 
-const adminNav = [{ to: "/category-templates", label: "Category Templates", icon: "template" }]
+// Grouped by functional area. Category Templates stays inside Projects but
+// is only included for System Manager — same role check already used to
+// gate that page's own New/Clone/Edit actions (CategoryTemplateListView.vue,
+// CategoryTemplateEditorView.vue), just also applied to its nav entry now.
+const navGroups = [
+  {
+    label: "Clients",
+    items: [
+      { to: "/owners", label: "Customers", icon: "users" },
+      { to: "/plots", label: "Plots", icon: "plot" },
+    ],
+  },
+  {
+    label: "Maintenance",
+    items: [
+      { to: "/works", label: "Works", icon: "work" },
+      { to: "/invoices/generate", label: "Generate Invoice", icon: "invoice" },
+      { to: "/invoices", label: "Invoice History", icon: "file" },
+    ],
+  },
+  {
+    label: "Projects",
+    items: [
+      { to: "/estimates", label: "Estimates", icon: "estimate" },
+      { to: "/projects", label: "Farm Projects", icon: "layers" },
+      ...(isSystemManager() ? [{ to: "/category-templates", label: "Category Templates", icon: "template" }] : []),
+    ],
+  },
+]
 </script>
 
 <template>
   <aside
-    class="fixed inset-y-0 left-0 z-40 w-64 flex flex-col bg-primary text-primary-foreground transition-transform lg:translate-x-0"
+    class="fixed inset-y-0 left-0 z-40 w-64 flex flex-col bg-primary text-primary-foreground transition-transform lg:translate-x-0 shadow-[6px_0_28px_-6px_rgba(23,76,59,0.45)]"
     :class="mobileOpen ? 'translate-x-0' : '-translate-x-full'"
   >
-    <div class="flex items-center gap-3 px-5 h-16 border-b border-white/10">
-      <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-primary-foreground/10">
-        <AppIcon name="sprout" :size="22" />
+    <div class="flex items-center gap-3 px-5 h-20 shrink-0">
+      <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary-foreground/10 text-accent">
+        <AppIcon name="sprout" :size="23" />
       </div>
       <div class="leading-tight">
-        <p class="font-display text-lg font-semibold">ManageFarms<span class="text-accent">Pro</span></p>
-        <p class="text-[11px] text-primary-foreground/60">Farm & Plot Operations</p>
+        <p class="font-display text-[19px] font-semibold tracking-tight">ManageFarms<span class="text-accent">Pro</span></p>
+        <p class="text-[11px] text-primary-foreground/55">Farm & Plot Operations</p>
       </div>
     </div>
 
-    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-      <router-link
-        v-for="item in nav"
-        :key="item.to"
-        :to="item.to"
-        custom
-        v-slot="{ href, navigate, isExactActive, isActive }"
-      >
+    <nav class="flex-1 px-3 py-3 overflow-y-auto">
+      <!-- Dashboard - standalone, above the grouped sections -->
+      <router-link :to="dashboardItem.to" custom v-slot="{ href, navigate, isExactActive }">
         <a
           :href="href"
           @click="(e) => { navigate(e); $emit('close') }"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
+          class="flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition-colors"
           :class="
-            (item.to === '/' ? isExactActive : isActive)
-              ? 'bg-primary-foreground/15 text-primary-foreground'
-              : 'text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground'
+            isExactActive
+              ? 'bg-primary-foreground/15 text-primary-foreground shadow-sm'
+              : 'text-primary-foreground/65 hover:bg-primary-foreground/10 hover:text-primary-foreground'
           "
         >
-          <AppIcon :name="item.icon" :size="19" />
-          {{ item.label }}
+          <AppIcon :name="dashboardItem.icon" :size="19" />
+          {{ dashboardItem.label }}
         </a>
       </router-link>
 
-      <div class="pt-3 mt-2 border-t border-white/10">
-        <p class="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground/40">Admin</p>
+      <div v-for="group in navGroups" :key="group.label">
+        <div class="pt-6 pb-2 px-3">
+          <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-accent/90">{{ group.label }}</p>
+        </div>
         <router-link
-          v-for="item in adminNav"
+          v-for="item in group.items"
           :key="item.to"
           :to="item.to"
           custom
@@ -68,11 +85,11 @@ const adminNav = [{ to: "/category-templates", label: "Category Templates", icon
           <a
             :href="href"
             @click="(e) => { navigate(e); $emit('close') }"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
+            class="flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition-colors"
             :class="
               isActive
-                ? 'bg-primary-foreground/15 text-primary-foreground'
-                : 'text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground'
+                ? 'bg-primary-foreground/15 text-primary-foreground shadow-sm'
+                : 'text-primary-foreground/65 hover:bg-primary-foreground/10 hover:text-primary-foreground'
             "
           >
             <AppIcon :name="item.icon" :size="19" />
@@ -82,25 +99,26 @@ const adminNav = [{ to: "/category-templates", label: "Category Templates", icon
       </div>
     </nav>
 
-    <div class="p-3">
+    <div class="px-3 pb-3 shrink-0">
       <router-link
         to="/works/new"
         @click="$emit('close')"
-        class="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-lg bg-accent text-accent-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
+        class="flex items-center justify-center gap-2 w-full px-3 py-3 rounded-xl bg-accent text-accent-foreground text-sm font-bold hover:brightness-95 transition-all shadow-sm"
       >
         <AppIcon name="plus" :size="18" />
         Log New Work
       </router-link>
     </div>
 
-    <div class="px-5 py-4 border-t border-white/10 flex items-center gap-3">
-      <div class="w-9 h-9 rounded-full bg-accent/80 flex items-center justify-center text-sm font-semibold">
+    <div class="mx-3 mb-3 px-3 py-3 rounded-xl bg-primary-foreground/10 flex items-center gap-3 shrink-0">
+      <div class="w-10 h-10 rounded-xl bg-primary-foreground/10 text-accent flex items-center justify-center text-sm font-bold ring-1 ring-primary-foreground/10">
         {{ initials(session.fullName) }}
       </div>
-      <div class="text-xs leading-tight">
-        <p class="font-medium">{{ session.fullName }}</p>
-        <p class="text-primary-foreground/60">{{ session.user }}</p>
+      <div class="text-xs leading-tight min-w-0">
+        <p class="font-semibold truncate">{{ session.fullName }}</p>
+        <p class="text-primary-foreground/55 truncate">{{ session.user }}</p>
       </div>
+      <AppIcon name="chevronDown" :size="16" class="ml-auto text-primary-foreground/45" />
     </div>
   </aside>
 </template>

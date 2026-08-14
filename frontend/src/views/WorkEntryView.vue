@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from "vue"
+import { ref, reactive, computed, watch, onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
 import FilterCombobox from "@/components/FilterCombobox.vue"
@@ -7,6 +7,7 @@ import RecordPicker from "@/components/RecordPicker.vue"
 import BalancePill from "@/components/BalancePill.vue"
 import ConfirmDialog from "@/components/ConfirmDialog.vue"
 import { fetchPlots, plotBalance } from "@/data/plots.js"
+import { fetchFarmProjectsForPlot } from "@/data/farm_projects.js"
 import { fetchWorkItems, fetchItemOptions, createWork } from "@/data/work_entry.js"
 import { useLineItemSections } from "@/composables/useLineItemSections.js"
 import { formatCurrency } from "@/format.js"
@@ -36,6 +37,7 @@ onMounted(async () => {
 
 const form = reactive({
   plot: typeof route.query.plot === "string" ? route.query.plot : "",
+  farm_project: typeof route.query.farm_project === "string" ? route.query.farm_project : "",
   work_type_name: "",
   work_date: new Date().toISOString().slice(0, 10),
   description: "",
@@ -43,6 +45,29 @@ const form = reactive({
 
 const selectedPlot = computed(() => plots.value.find((p) => p.name === form.plot))
 const plotOptions = computed(() => plots.value.map((p) => p.plot_name))
+
+// Farm Project is optional — most Work still just logs against a plot's
+// maintenance budget with no project involved. When exactly one Active Farm
+// Project exists for the selected plot we default to it (still editable/
+// clearable); with zero or multiple matches we leave it for the user to pick.
+const farmProjectOptions = ref([])
+watch(
+  () => form.plot,
+  async (plotName) => {
+    if (!plotName) {
+      farmProjectOptions.value = []
+      form.farm_project = ""
+      return
+    }
+    const rows = await fetchFarmProjectsForPlot(plotName)
+    farmProjectOptions.value = rows.map((r) => ({ value: r.name, label: `${r.name} · ${r.category || "Farm Project"} (${r.status})` }))
+    if (!rows.some((r) => r.name === form.farm_project)) {
+      const activeMatches = rows.filter((r) => r.status === "Active")
+      form.farm_project = activeMatches.length === 1 ? activeMatches[0].name : ""
+    }
+  },
+  { immediate: true },
+)
 
 function onWorkTypeSelect(option) {
   form.description = option?.description || form.description
@@ -80,6 +105,7 @@ async function doSubmit() {
   try {
     const work = await createWork({
       plot: form.plot,
+      farm_project: form.farm_project,
       work_type_name: form.work_type_name,
       work_date: form.work_date,
       customer: selectedPlot.value?.customer_name,
@@ -130,6 +156,15 @@ async function doSubmit() {
             <label class="block">
               <span class="text-sm text-muted mb-1.5 block">Work Date</span>
               <input v-model="form.work_date" type="date" class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </label>
+            <label class="block">
+              <span class="text-sm text-muted mb-1.5 block">Farm Project <span class="text-muted/60">(optional)</span></span>
+              <RecordPicker
+                v-model="form.farm_project"
+                :options="farmProjectOptions"
+                :disabled="!form.plot"
+                placeholder="No Farm Project linked"
+              />
             </label>
           </div>
           <label class="block">

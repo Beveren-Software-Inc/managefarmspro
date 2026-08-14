@@ -16,6 +16,8 @@ import EstimateListView from "@/views/EstimateListView.vue"
 import EstimateSetupView from "@/views/EstimateSetupView.vue"
 import EstimateBuilderView from "@/views/EstimateBuilderView.vue"
 import EstimateOutputView from "@/views/EstimateOutputView.vue"
+import FarmProjectListView from "@/views/FarmProjectListView.vue"
+import FarmProjectDetailView from "@/views/FarmProjectDetailView.vue"
 
 function stub(label, title) {
   return { component: ComingSoonView, props: { screen: label }, meta: { title } }
@@ -47,6 +49,8 @@ const routes = [
   { path: "/estimates/:id", name: "estimate-detail", component: EstimateBuilderView, meta: { title: "Estimate" } },
   { path: "/estimates/:id/edit", name: "estimate-edit", component: EstimateSetupView, meta: { title: "Edit Estimate" } },
   { path: "/estimates/:id/output", name: "estimate-output", component: EstimateOutputView, meta: { title: "Estimate Documents" } },
+  { path: "/projects", name: "projects", component: FarmProjectListView, meta: { title: "Farm Projects" } },
+  { path: "/projects/:id", name: "project-detail", component: FarmProjectDetailView, meta: { title: "Farm Project" } },
   {
     path: "/category-templates",
     name: "category-templates",

@@ -38,9 +38,11 @@ class Work(Document):
 
 	def on_submit(self):
 		self.update_plot_totals()
+		self.update_farm_project_totals()
 
 	def on_cancel(self):
 		self.update_plot_totals()
+		self.update_farm_project_totals()
 
 	def update_plot_totals(self):
 		if self.plot:
@@ -89,6 +91,48 @@ class Work(Document):
 				docname=self.plot,
 				after_commit=True,
 			)
+
+	def update_farm_project_totals(self):
+		# Independent of update_plot_totals above — Farm Project budget is
+		# project-scoped (sum of all linked Work, ever), not month-scoped like
+		# Plot's maintenance budget. No supervision-charge percentage here:
+		# unlike Plot, Farm Project has no supervision_charge field of its own.
+		if not self.farm_project:
+			return
+
+		total_spent = frappe.db.sql(
+			"""
+            SELECT COALESCE(SUM(total_cost), 0)
+            FROM tabWork
+            WHERE farm_project = %s
+            AND docstatus = 1
+            """,
+			(self.farm_project,),
+		)[0][0]
+
+		estimated_cost = frappe.db.get_value("Farm Project", self.farm_project, "estimated_cost") or 0
+
+		frappe.db.set_value(
+			"Farm Project",
+			self.farm_project,
+			{
+				"actual_cost": total_spent,
+				"cost_balance": estimated_cost - total_spent,
+			},
+			update_modified=False,
+		)
+
+		frappe.publish_realtime(
+			"farm_project_updated",
+			{
+				"farm_project_name": self.farm_project,
+				"actual_cost": total_spent,
+				"cost_balance": estimated_cost - total_spent,
+			},
+			doctype="Farm Project",
+			docname=self.farm_project,
+			after_commit=True,
+		)
 
 
 @frappe.whitelist()

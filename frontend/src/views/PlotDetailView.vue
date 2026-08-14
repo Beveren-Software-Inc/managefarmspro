@@ -6,6 +6,7 @@ import StatusBadge from "@/components/StatusBadge.vue"
 import BalancePill from "@/components/BalancePill.vue"
 import TabNav from "@/components/TabNav.vue"
 import { fetchPlotDetail, plotBalance } from "@/data/plots.js"
+import { fetchFarmProjectsForPlot, farmProjectBalance } from "@/data/farm_projects.js"
 import { formatCurrency, formatDate } from "@/format.js"
 
 const route = useRoute()
@@ -14,10 +15,13 @@ const router = useRouter()
 const loading = ref(true)
 const error = ref(null)
 const plot = ref(null)
+const farmProjects = ref([])
 
 onMounted(async () => {
   try {
-    plot.value = await fetchPlotDetail(route.params.id)
+    const [plotDoc, projectRows] = await Promise.all([fetchPlotDetail(route.params.id), fetchFarmProjectsForPlot(route.params.id)])
+    plot.value = plotDoc
+    farmProjects.value = projectRows
   } catch (e) {
     error.value = e.messages?.[0] || e.message || "Failed to load this plot."
   } finally {
@@ -33,6 +37,7 @@ const tab = ref("details")
 const tabs = computed(() => [
   { key: "details", label: "Details" },
   { key: "works", label: `Works (${plotWorks.value.length})` },
+  { key: "projects", label: `Farm Projects (${farmProjects.value.length})` },
 ])
 
 const spentPct = computed(() =>
@@ -49,7 +54,7 @@ const spentPct = computed(() =>
   <div v-else-if="plot" class="space-y-6">
     <div
       :class="
-        tab === 'works'
+        tab === 'works' || tab === 'projects'
           ? 'sticky top-16 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pt-6 pb-4 bg-background border-b border-border space-y-6'
           : 'space-y-6'
       "
@@ -145,7 +150,7 @@ const spentPct = computed(() =>
     </div>
 
     <!-- Works tab -->
-    <div v-else>
+    <div v-else-if="tab === 'works'">
       <div v-if="plotWorks.length" class="bg-surface border border-border rounded-xl overflow-hidden">
         <table class="w-full text-sm">
           <thead>
@@ -171,6 +176,36 @@ const spentPct = computed(() =>
       </div>
       <div v-else class="text-center py-16 text-muted bg-surface border border-border rounded-xl">
         No works logged for this plot yet.
+      </div>
+    </div>
+
+    <!-- Farm Projects tab -->
+    <div v-else>
+      <div v-if="farmProjects.length" class="bg-surface border border-border rounded-xl overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-muted border-b border-border bg-surface-muted/50">
+              <th class="font-medium px-5 py-3">Project</th>
+              <th class="font-medium px-5 py-3">Status</th>
+              <th class="font-medium px-5 py-3 text-right">Budget</th>
+              <th class="font-medium px-5 py-3 text-right">Balance</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border">
+            <tr v-for="p in farmProjects" :key="p.name" class="hover:bg-surface-muted/60 cursor-pointer" @click="router.push(`/projects/${p.name}`)">
+              <td class="px-5 py-3.5">
+                <p class="font-medium text-foreground">{{ p.category || "Farm Project" }}</p>
+                <p class="text-xs text-muted">{{ p.name }}</p>
+              </td>
+              <td class="px-5 py-3.5"><StatusBadge :status="p.status" /></td>
+              <td class="px-5 py-3.5 text-right text-muted tabular-nums">{{ formatCurrency(p.estimated_cost) }}</td>
+              <td class="px-5 py-3.5 text-right"><BalancePill :balance="farmProjectBalance(p)" :budget="p.estimated_cost" size="sm" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-else class="text-center py-16 text-muted bg-surface border border-border rounded-xl">
+        No Farm Projects created against this plot yet.
       </div>
     </div>
   </div>

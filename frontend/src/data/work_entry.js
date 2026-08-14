@@ -90,10 +90,11 @@ export function fromChildRow(category, row) {
 
 // Insert then submit — same two whitelisted methods Desk's own save+submit
 // flow ultimately runs through, not a new endpoint.
-export async function createWork({ plot, work_type_name, work_date, customer, description, labor, equipment, material }) {
+export async function createWork({ plot, farm_project, work_type_name, work_date, customer, description, labor, equipment, material }) {
   const doc = {
     doctype: "Work",
     plot,
+    farm_project: farm_project || null,
     work_type_name,
     work_date,
     customer,

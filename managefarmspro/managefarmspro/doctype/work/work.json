@@ -8,6 +8,7 @@
  "field_order": [
   "work_information",
   "plot",
+  "farm_project",
   "monthly_maintenance_budget",
   "maintenance_balance",
   "supervision_charges",
@@ -104,6 +105,15 @@
    "label": "Plot",
    "options": "Plot",
    "reqd": 1
+  },
+  {
+   "description": "Optional — links this Work to a Farm Project's budget rollup (Estimated vs Actual Cost). Nullable: existing Work rows are unaffected, and logging Work against a plot doesn't require a Farm Project to exist.",
+   "fieldname": "farm_project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Farm Project",
+   "options": "Farm Project"
   },
   {
    "fieldname": "amended_from",

@@ -815,6 +815,11 @@ async function confirmCancel() {
       Amended from <router-link :to="`/estimates/${doc.amended_from}`" target="_blank" class="text-primary hover:underline font-medium">{{ doc.amended_from }}</router-link>
     </div>
 
+    <div v-if="!isLocalMode && linkedProject" class="bg-primary-soft border border-primary/30 rounded-xl px-5 py-3 mb-5 text-sm text-foreground flex items-center gap-2">
+      <AppIcon name="layers" :size="15" class="text-primary" />
+      Converted to Farm Project <router-link :to="`/projects/${linkedProject.name}`" target="_blank" class="text-primary hover:underline font-medium">{{ linkedProject.name }}</router-link>
+    </div>
+
     <!-- Status stepper -->
     <div v-if="!isLocalMode" class="bg-surface border border-border rounded-xl px-5 py-4 mb-5">
       <div class="flex items-center gap-0">

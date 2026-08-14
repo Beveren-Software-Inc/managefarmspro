@@ -11,7 +11,11 @@
   "customer",
   "plot",
   "category",
-  "status"
+  "status",
+  "estimated_cost",
+  "actual_cost",
+  "cost_balance",
+  "tasks"
  ],
  "fields": [
   {
@@ -51,6 +55,38 @@
    "in_list_view": 1,
    "label": "Status",
    "options": "Active\nCompleted"
+  },
+  {
+   "bold": 1,
+   "description": "Live-fetched from the source Estimate's grand total. Safe as a fetch (not a snapshot): the Estimate is locked from further amendment once this Farm Project exists.",
+   "fetch_from": "estimate.grand_total",
+   "fieldname": "estimated_cost",
+   "fieldtype": "Currency",
+   "label": "Estimated Cost",
+   "read_only": 1
+  },
+  {
+   "bold": 1,
+   "description": "Sum of total_cost across submitted Work entries linked to this Farm Project. Written by Work.update_farm_project_totals(), same pattern as Plot's total_amount_spent.",
+   "fieldname": "actual_cost",
+   "fieldtype": "Currency",
+   "label": "Actual Cost",
+   "read_only": 1
+  },
+  {
+   "bold": 1,
+   "fieldname": "cost_balance",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Cost Balance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tasks",
+   "fieldtype": "Table",
+   "label": "Tasks",
+   "options": "Farm Project Task"
   }
  ],
  "index_web_pages_for_search": 1,
