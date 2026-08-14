@@ -88,10 +88,8 @@ export function fromChildRow(category, row) {
   }
 }
 
-// Insert then submit — same two whitelisted methods Desk's own save+submit
-// flow ultimately runs through, not a new endpoint.
-export async function createWork({ plot, farm_project, work_type_name, work_date, customer, description, labor, equipment, material }) {
-  const doc = {
+function buildWorkDoc({ plot, farm_project, work_type_name, work_date, customer, description, labor, equipment, material }) {
+  return {
     doctype: "Work",
     plot,
     farm_project: farm_project || null,
@@ -103,8 +101,21 @@ export async function createWork({ plot, farm_project, work_type_name, work_date
     equipment_table: equipment.map((l) => toChildRow("equipment", l)),
     material_table: material.map((l) => toChildRow("material", l)),
   }
-  const inserted = await call("frappe.client.insert", { doc })
+}
+
+// Insert then submit — same two whitelisted methods Desk's own save+submit
+// flow ultimately runs through, not a new endpoint.
+export async function createWork(fields) {
+  const inserted = await call("frappe.client.insert", { doc: buildWorkDoc(fields) })
   return call("frappe.client.submit", { doc: inserted })
+}
+
+// Insert only — lands at docstatus 0 (Draft), same "plain insert, no
+// submit" idiom as Estimate's createEstimate(). WorkDetailView.vue already
+// has full Draft-editing (Save Draft/Cancel/Submit via updateWork/
+// submitWork) for whatever this returns.
+export async function createWorkDraft(fields) {
+  return call("frappe.client.insert", { doc: buildWorkDoc(fields) })
 }
 
 // Loads the current Draft, overwrites the editable fields + child tables,

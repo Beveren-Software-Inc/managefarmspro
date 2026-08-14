@@ -112,6 +112,7 @@ const quickActions = [
             <AppIcon name="alert" :size="17" />
           </span>
           <h2 class="font-display text-lg font-semibold text-foreground">Low Balance Plots</h2>
+          <RouterLink to="/low-balance-plots" class="ml-auto text-xs font-medium text-primary hover:underline">View all</RouterLink>
         </div>
         <p v-if="loading" class="text-sm text-muted text-center py-6">Loading…</p>
         <p v-else-if="!stats.lowBalancePlots.length" class="text-sm text-muted text-center py-6">

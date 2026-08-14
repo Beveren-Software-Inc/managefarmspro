@@ -8,7 +8,7 @@ import BalancePill from "@/components/BalancePill.vue"
 import ConfirmDialog from "@/components/ConfirmDialog.vue"
 import { fetchPlots, plotBalance } from "@/data/plots.js"
 import { fetchFarmProjectsForPlot } from "@/data/farm_projects.js"
-import { fetchWorkItems, fetchItemOptions, createWork } from "@/data/work_entry.js"
+import { fetchWorkItems, fetchItemOptions, createWork, createWorkDraft } from "@/data/work_entry.js"
 import { useLineItemSections } from "@/composables/useLineItemSections.js"
 import { formatCurrency } from "@/format.js"
 
@@ -82,8 +82,23 @@ const projectedBalance = computed(() =>
 )
 
 const submitting = ref(false)
+const savingDraft = ref(false)
 const submitError = ref(null)
 const showBudgetConfirm = ref(false)
+
+function workPayload() {
+  return {
+    plot: form.plot,
+    farm_project: form.farm_project,
+    work_type_name: form.work_type_name,
+    work_date: form.work_date,
+    customer: selectedPlot.value?.customer_name,
+    description: form.description,
+    labor: sections.labor.items,
+    equipment: sections.equipment.items,
+    material: sections.material.items,
+  }
+}
 
 function submit() {
   submitError.value = null
@@ -99,21 +114,28 @@ function submit() {
   doSubmit()
 }
 
+// Saving as Draft never affects a plot's budget rollup (update_plot_totals
+// only runs on Work submit/cancel — work.py), so there's nothing to warn
+// about here even when the running total exceeds the plot's balance. The
+// warning only matters at Submit time.
+async function saveDraft() {
+  submitError.value = null
+  savingDraft.value = true
+  try {
+    const work = await createWorkDraft(workPayload())
+    router.push(`/works/${work.name}`)
+  } catch (e) {
+    submitError.value = e.messages?.[0] || e.message || "Failed to save this draft."
+  } finally {
+    savingDraft.value = false
+  }
+}
+
 async function doSubmit() {
   showBudgetConfirm.value = false
   submitting.value = true
   try {
-    const work = await createWork({
-      plot: form.plot,
-      farm_project: form.farm_project,
-      work_type_name: form.work_type_name,
-      work_date: form.work_date,
-      customer: selectedPlot.value?.customer_name,
-      description: form.description,
-      labor: sections.labor.items,
-      equipment: sections.equipment.items,
-      material: sections.material.items,
-    })
+    const work = await createWork(workPayload())
     router.push(`/works/${work.name}`)
   } catch (e) {
     submitError.value = e.messages?.[0] || e.message || "Failed to save this work."
@@ -256,14 +278,23 @@ async function doSubmit() {
               <span class="font-display text-2xl font-bold text-foreground tabular-nums">{{ formatCurrency(totalCost) }}</span>
             </div>
             <p v-if="submitError" class="text-sm text-negative bg-negative-soft rounded-lg p-3 mb-3">{{ submitError }}</p>
-            <button
-              class="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary-hover disabled:opacity-60"
-              :disabled="submitting || !form.plot || !form.work_type_name"
-              @click="submit"
-            >
-              <AppIcon name="check" :size="18" />
-              {{ submitting ? "Saving…" : "Submit Work" }}
-            </button>
+            <div class="flex flex-col gap-2">
+              <button
+                class="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-surface-muted disabled:opacity-60"
+                :disabled="savingDraft || submitting || !form.plot || !form.work_type_name"
+                @click="saveDraft"
+              >
+                {{ savingDraft ? "Saving…" : "Save Draft" }}
+              </button>
+              <button
+                class="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary-hover disabled:opacity-60"
+                :disabled="submitting || savingDraft || !form.plot || !form.work_type_name"
+                @click="submit"
+              >
+                <AppIcon name="check" :size="18" />
+                {{ submitting ? "Saving…" : "Submit Work" }}
+              </button>
+            </div>
           </div>
         </div>
       </div>

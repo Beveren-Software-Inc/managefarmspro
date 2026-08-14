@@ -18,6 +18,7 @@ import EstimateBuilderView from "@/views/EstimateBuilderView.vue"
 import EstimateOutputView from "@/views/EstimateOutputView.vue"
 import FarmProjectListView from "@/views/FarmProjectListView.vue"
 import FarmProjectDetailView from "@/views/FarmProjectDetailView.vue"
+import LowBalancePlotsView from "@/views/LowBalancePlotsView.vue"
 
 function stub(label, title) {
   return { component: ComingSoonView, props: { screen: label }, meta: { title } }
@@ -32,6 +33,7 @@ const routes = [
   { path: "/works", name: "works", component: WorkListView, meta: { title: "Works" } },
   { path: "/works/new", name: "work-new", component: WorkEntryView, meta: { title: "New Work" } },
   { path: "/works/:id", name: "work-detail", component: WorkDetailView, meta: { title: "Work" } },
+  { path: "/low-balance-plots", name: "low-balance-plots", component: LowBalancePlotsView, meta: { title: "Low Balance Plots" } },
   {
     path: "/invoices",
     name: "invoices",

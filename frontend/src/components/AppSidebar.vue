@@ -25,6 +25,7 @@ const navGroups = [
       { to: "/works", label: "Works", icon: "work" },
       { to: "/invoices/generate", label: "Generate Invoice", icon: "invoice" },
       { to: "/invoices", label: "Invoice History", icon: "file" },
+      { to: "/low-balance-plots", label: "Low Balance Plots", icon: "alert" },
     ],
   },
   {

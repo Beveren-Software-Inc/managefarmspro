@@ -5,11 +5,13 @@ import AppIcon from "@/components/AppIcon.vue"
 import StatusBadge from "@/components/StatusBadge.vue"
 import BalancePill from "@/components/BalancePill.vue"
 import TabNav from "@/components/TabNav.vue"
+import AddPlotDialog from "@/components/AddPlotDialog.vue"
 import { fetchCustomer } from "@/data/customers.js"
 import { fetchPlotsForCustomer, plotBalance } from "@/data/plots.js"
 import { fetchInvoicesForCustomer, fetchInvoicePdfUrls } from "@/data/invoices.js"
 import { fetchEstimatesForCustomer, areaLabel } from "@/data/estimates.js"
 import { formatCurrency, formatDate } from "@/format.js"
+import { isSystemManager } from "@/session.js"
 
 const route = useRoute()
 const router = useRouter()
@@ -52,6 +54,15 @@ const tabs = computed(() => [
 
 const totalBudget = computed(() => plots.value.reduce((t, p) => t + (p.monthly_maintenance_budget || 0), 0))
 const totalBalance = computed(() => plots.value.reduce((t, p) => t + plotBalance(p), 0))
+
+// Plot's own doctype permissions restrict create to System Manager (plot.json).
+const canAddPlot = isSystemManager()
+const showAddPlot = ref(false)
+
+function onPlotCreated(created) {
+  showAddPlot.value = false
+  router.push(`/plots/${created.name}`)
+}
 </script>
 
 <template>
@@ -125,6 +136,14 @@ const totalBalance = computed(() => plots.value.reduce((t, p) => t + plotBalance
 
     <!-- Plots -->
     <div v-else-if="tab === 'plots'" class="space-y-3">
+      <div v-if="canAddPlot" class="flex justify-end">
+        <button
+          class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-hover transition-colors"
+          @click="showAddPlot = true"
+        >
+          <AppIcon name="plus" :size="17" /> Add Plot
+        </button>
+      </div>
       <p v-if="!plots.length" class="text-center py-16 text-muted bg-surface border border-border rounded-xl">
         No plots linked to this customer.
       </p>
@@ -217,6 +236,14 @@ const totalBalance = computed(() => plots.value.reduce((t, p) => t + plotBalance
         <span class="text-muted"><AppIcon name="chevronRight" :size="18" /></span>
       </button>
     </div>
+
+    <AddPlotDialog
+      v-if="showAddPlot"
+      :preset-customer="customer.name"
+      :preset-customer-label="customer.customer_name"
+      @close="showAddPlot = false"
+      @created="onPlotCreated"
+    />
   </div>
 
   <div v-else class="text-center py-20 text-muted">Customer not found.</div>

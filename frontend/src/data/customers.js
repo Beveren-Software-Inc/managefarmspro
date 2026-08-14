@@ -23,3 +23,39 @@ export async function fetchCustomers() {
 export async function fetchCustomer(name) {
   return call("frappe.client.get", { doctype: "Customer", name })
 }
+
+// Standalone Add Customer entry point (Customers list) — matches this app's
+// actual customized Customer form in Desk, not base ERPNext's raw doctype.
+// Confirmed live against the DB (Custom Field / Property Setter records —
+// none of this is exported to fixtures, so it's invisible to a filesystem
+// search): customer_group/territory/default_sales_partner/mobile_no/
+// email_id/customer_details are all hidden in this app's Customer form.
+// The real, visible fields are custom ones this app added instead:
+// customer_phone/customer_email/customer_since/is_active_ (label "Is Active
+// ?"), plus base is_internal_customer, plus a Partners child table
+// (doctype "Partner": partner_name/phone_number/email) that Desk's own
+// client script only shows when customer_type === "Partnership" — same
+// conditional applied here.
+export async function createCustomer({
+  customer_name,
+  customer_type,
+  customer_phone,
+  customer_email,
+  customer_since,
+  is_active,
+  is_internal_customer,
+  partners,
+}) {
+  const doc = {
+    doctype: "Customer",
+    customer_name,
+    customer_type: customer_type || "Company",
+    customer_phone: customer_phone || null,
+    customer_email: customer_email || null,
+    customer_since: customer_since || null,
+    is_active_: is_active ? 1 : 0,
+    is_internal_customer: is_internal_customer ? 1 : 0,
+    partners_information: customer_type === "Partnership" ? (partners || []).filter((p) => p.partner_name) : [],
+  }
+  return call("frappe.client.insert", { doc })
+}

@@ -5,8 +5,10 @@ import AppIcon from "@/components/AppIcon.vue"
 import StatusBadge from "@/components/StatusBadge.vue"
 import BalancePill from "@/components/BalancePill.vue"
 import FilterCombobox from "@/components/FilterCombobox.vue"
+import AddPlotDialog from "@/components/AddPlotDialog.vue"
 import { fetchPlots, plotBalance } from "@/data/plots.js"
 import { formatCurrency } from "@/format.js"
+import { isSystemManager } from "@/session.js"
 
 const router = useRouter()
 
@@ -44,6 +46,16 @@ const filtered = computed(() =>
     return matchQ && matchCluster && matchCustomer
   }),
 )
+
+// Plot's own doctype permissions restrict create to System Manager
+// (plot.json) — same precedent as Category Templates.
+const canAddPlot = isSystemManager()
+const showAddPlot = ref(false)
+
+function onPlotCreated(created) {
+  showAddPlot.value = false
+  router.push(`/plots/${created.name}`)
+}
 </script>
 
 <template>
@@ -75,6 +87,19 @@ const filtered = computed(() =>
           <span class="text-xs text-muted mb-1.5 block">Filter by Owner</span>
           <FilterCombobox v-model="customerFilter" :options="customerOptions" placeholder="All owners" />
         </label>
+        <router-link
+          to="/low-balance-plots"
+          class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-surface-muted transition-colors"
+        >
+          <AppIcon name="alert" :size="17" /> Low Balance Plots
+        </router-link>
+        <button
+          v-if="canAddPlot"
+          class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-hover transition-colors"
+          @click="showAddPlot = true"
+        >
+          <AppIcon name="plus" :size="17" /> Add Plot
+        </button>
       </div>
     </div>
 
@@ -122,5 +147,7 @@ const filtered = computed(() =>
         <p class="text-xs text-muted mt-3 truncate">{{ p.customer_name }}</p>
       </button>
     </div>
+
+    <AddPlotDialog v-if="showAddPlot" @close="showAddPlot = false" @created="onPlotCreated" />
   </div>
 </template>
