@@ -1,0 +1,41 @@
+{
+ "actions": [],
+ "creation": "2026-08-14 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "pricing_tiers"
+ ],
+ "fields": [
+  {
+   "description": "Evaluated top to bottom by distance — the tier with the smallest Max Distance that the visit's distance still fits under wins. The tier with Max Distance left at 0 is treated as unbounded (matches any distance no earlier tier covers).",
+   "fieldname": "pricing_tiers",
+   "fieldtype": "Table",
+   "label": "Pricing Tiers",
+   "options": "Site Visit Pricing Tier"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-08-14 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Managefarmspro",
+ "name": "Site Visit Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

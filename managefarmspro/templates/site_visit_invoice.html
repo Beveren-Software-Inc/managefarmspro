@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			/* wkhtmltopdf (QtWebKit 4.8) does not reliably render flexbox — same
+			   lesson already learned in client_estimate.html. Table layout
+			   throughout, no flex/gap anywhere. */
+			body {
+				font-family: Arial, sans-serif;
+				color: #333;
+			}
+			.main-container {
+				padding: 20px;
+			}
+			.header-table {
+				width: 100%;
+				border-collapse: collapse;
+				border-bottom: 2px solid #003366;
+				padding-bottom: 15px;
+				margin-bottom: 15px;
+			}
+			.header-table td { vertical-align: top; padding-bottom: 15px; }
+			.header-table .company h2 { margin: 0; color: #003366; }
+			.header-table .company p { margin: 0; font-size: 12px; }
+			.header-table .logo { width: 110px; text-align: right; }
+			.header-table .logo img { width: 100px; }
+
+			.title { text-align: center; color: #003366; font-size: 22px; margin: 15px 0 20px; }
+
+			.info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 13px; }
+			.info-table td { vertical-align: top; width: 50%; }
+			.info-table .right { text-align: right; }
+			.label { text-transform: uppercase; font-size: 11px; font-weight: bold; color: #666; margin-bottom: 4px; }
+
+			table.items { width: 100%; border-collapse: collapse; margin: 15px 0; }
+			table.items th, table.items td { border: 1px solid #ddd; padding: 8px 10px; }
+			table.items th { background-color: #f0f4f8; text-align: left; color: #003366; }
+			table.items td.num, table.items th.num { text-align: right; }
+			table.items tr.total-row td { font-weight: bold; background-color: #f0f8ff; }
+
+			.bottom-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+			.bottom-table td { vertical-align: top; width: 50%; }
+			.bottom-table p { margin: 2px 0; }
+
+			.totals-table { width: 100%; border-collapse: collapse; }
+			.totals-table td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+			.totals-table td.num { text-align: right; }
+			.totals-table tr.grand-total td { font-weight: bold; background-color: #f0f8ff; }
+
+			.signatures-table { width: 100%; border-collapse: collapse; margin-top: 40px; }
+			.signatures-table td { width: 100%; text-align: right; padding-top: 15px; }
+			.sig-line { border-top: 1px solid #333; padding-top: 4px; margin-top: 40px; font-weight: bold; }
+		</style>
+	</head>
+	<body>
+		<div class="main-container">
+			<table class="header-table">
+				<tr>
+					<td class="company">
+						<h2>Philosan Farm Management</h2>
+						<p>VP 8/698A, Kolakkattu House, Edapal, Malappuram, Kerala, India</p>
+						<p>Phone no.: 7411170252</p>
+						<p>Email: shihabkv22008@gmail.com</p>
+					</td>
+					<td class="logo"><img src="/files/philosan-logo.png" alt="Philosan" /></td>
+				</tr>
+			</table>
+
+			<h1 class="title">Tax Invoice</h1>
+
+			<table class="info-table">
+				<tr>
+					<td>
+						<div class="label">Bill To</div>
+						<div>{{ invoice.customer_name or invoice.customer }}</div>
+					</td>
+					<td class="right">
+						<div class="label">Invoice Details</div>
+						<div>Date: {{ frappe.utils.formatdate(invoice.posting_date) }}</div>
+						<div>Site Visit Ref: {{ site_visit.name }}</div>
+					</td>
+				</tr>
+			</table>
+
+			<table class="items">
+				<thead>
+					<tr>
+						<th>#</th>
+						<th>Item name</th>
+						<th class="num">Quantity</th>
+						<th class="num">Price/unit</th>
+						<th class="num">Amount</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for item in invoice.items %}
+					<tr>
+						<td>{{ loop.index }}</td>
+						<td>{{ item.item_name }}</td>
+						<td class="num">{{ item.qty }}</td>
+						<td class="num">₹ {{ '{:,.2f}'.format(item.rate or 0) }}</td>
+						<td class="num">₹ {{ '{:,.2f}'.format(item.amount or 0) }}</td>
+					</tr>
+					{% endfor %}
+					<tr class="total-row">
+						<td colspan="2">Total</td>
+						<td class="num">{{ invoice.total_qty }}</td>
+						<td></td>
+						<td class="num">₹ {{ '{:,.2f}'.format(invoice.grand_total or 0) }}</td>
+					</tr>
+				</tbody>
+			</table>
+
+			<table class="bottom-table">
+				<tr>
+					<td>
+						<div class="label">Invoice Amount In Words</div>
+						<p>{{ amount_in_words }}</p>
+						<div class="label" style="margin-top: 16px">Terms and Conditions</div>
+						<p>Thank you for doing business with us.</p>
+					</td>
+					<td>
+						<table class="totals-table">
+							<tr><td>Sub Total</td><td class="num">₹ {{ '{:,.2f}'.format(invoice.total or invoice.grand_total or 0) }}</td></tr>
+							<tr class="grand-total"><td>Total</td><td class="num">₹ {{ '{:,.2f}'.format(invoice.grand_total or 0) }}</td></tr>
+							<tr><td>Received</td><td class="num">₹ {{ '{:,.2f}'.format(received or 0) }}</td></tr>
+							<tr><td>Balance</td><td class="num">₹ {{ '{:,.2f}'.format(invoice.outstanding_amount or 0) }}</td></tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+
+			<table class="signatures-table">
+				<tr>
+					<td>
+						<div>For: Philosan Farm Management</div>
+						<div class="sig-line">Authorized Signatory</div>
+					</td>
+				</tr>
+			</table>
+		</div>
+	</body>
+</html>

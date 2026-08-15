@@ -29,6 +29,14 @@ const navGroups = [
     ],
   },
   {
+    label: "Site Visits",
+    items: [
+      { to: "/site-visits", label: "Site Visits", icon: "calendar" },
+      { to: "/site-visits/calendar", label: "Visit Calendar", icon: "calendar" },
+      ...(isSystemManager() ? [{ to: "/settings/site-visit-pricing", label: "Pricing", icon: "percent" }] : []),
+    ],
+  },
+  {
     label: "Projects",
     items: [
       { to: "/estimates", label: "Estimates", icon: "estimate" },
@@ -44,9 +52,9 @@ const navGroups = [
     class="fixed inset-y-0 left-0 z-40 w-64 flex flex-col bg-primary text-primary-foreground transition-transform lg:translate-x-0 shadow-[6px_0_28px_-6px_rgba(23,76,59,0.45)]"
     :class="mobileOpen ? 'translate-x-0' : '-translate-x-full'"
   >
-    <div class="flex items-center gap-3 px-5 h-20 shrink-0">
-      <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary-foreground/10 text-accent">
-        <AppIcon name="sprout" :size="23" />
+    <div class="flex items-center gap-3 px-5 h-16 shrink-0">
+      <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-primary-foreground/10 text-accent">
+        <AppIcon name="sprout" :size="21" />
       </div>
       <div class="leading-tight">
         <p class="font-display text-[19px] font-semibold tracking-tight">ManageFarms<span class="text-accent">Pro</span></p>
@@ -54,13 +62,13 @@ const navGroups = [
       </div>
     </div>
 
-    <nav class="flex-1 px-3 py-3 overflow-y-auto">
+    <nav class="flex-1 px-3 py-1.5 overflow-y-auto">
       <!-- Dashboard - standalone, above the grouped sections -->
       <router-link :to="dashboardItem.to" custom v-slot="{ href, navigate, isExactActive }">
         <a
           :href="href"
           @click="(e) => { navigate(e); $emit('close') }"
-          class="flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition-colors"
+          class="flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm font-semibold transition-colors"
           :class="
             isExactActive
               ? 'bg-primary-foreground/15 text-primary-foreground shadow-sm'
@@ -73,7 +81,7 @@ const navGroups = [
       </router-link>
 
       <div v-for="group in navGroups" :key="group.label">
-        <div class="pt-6 pb-2 px-3">
+        <div class="pt-3.5 pb-1 px-3">
           <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-accent/90">{{ group.label }}</p>
         </div>
         <router-link
@@ -86,7 +94,7 @@ const navGroups = [
           <a
             :href="href"
             @click="(e) => { navigate(e); $emit('close') }"
-            class="flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition-colors"
+            class="flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm font-semibold transition-colors"
             :class="
               isActive
                 ? 'bg-primary-foreground/15 text-primary-foreground shadow-sm'
@@ -100,19 +108,19 @@ const navGroups = [
       </div>
     </nav>
 
-    <div class="px-3 pb-3 shrink-0">
+    <div class="px-3 pb-2 shrink-0">
       <router-link
         to="/works/new"
         @click="$emit('close')"
-        class="flex items-center justify-center gap-2 w-full px-3 py-3 rounded-xl bg-accent text-accent-foreground text-sm font-bold hover:brightness-95 transition-all shadow-sm"
+        class="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-bold hover:brightness-95 transition-all shadow-sm"
       >
         <AppIcon name="plus" :size="18" />
         Log New Work
       </router-link>
     </div>
 
-    <div class="mx-3 mb-3 px-3 py-3 rounded-xl bg-primary-foreground/10 flex items-center gap-3 shrink-0">
-      <div class="w-10 h-10 rounded-xl bg-primary-foreground/10 text-accent flex items-center justify-center text-sm font-bold ring-1 ring-primary-foreground/10">
+    <div class="mx-3 mb-2.5 px-3 py-2.5 rounded-xl bg-primary-foreground/10 flex items-center gap-3 shrink-0">
+      <div class="w-9 h-9 rounded-xl bg-primary-foreground/10 text-accent flex items-center justify-center text-sm font-bold ring-1 ring-primary-foreground/10">
         {{ initials(session.fullName) }}
       </div>
       <div class="text-xs leading-tight min-w-0">

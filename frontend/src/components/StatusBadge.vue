@@ -13,7 +13,11 @@ const styleMap = {
   // Invoice statuses
   Paid: "bg-positive-soft text-positive",
   Unpaid: "bg-warning-soft text-warning",
+  "Partly Paid": "bg-warning-soft text-warning",
   Overdue: "bg-negative-soft text-negative",
+  // Site Visit statuses
+  Scheduled: "bg-info-soft text-info",
+  Visited: "bg-warning-soft text-warning",
   // Plot statuses
   Active: "bg-positive-soft text-positive",
   Inactive: "bg-surface-muted text-muted",

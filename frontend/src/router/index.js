@@ -19,6 +19,11 @@ import EstimateOutputView from "@/views/EstimateOutputView.vue"
 import FarmProjectListView from "@/views/FarmProjectListView.vue"
 import FarmProjectDetailView from "@/views/FarmProjectDetailView.vue"
 import LowBalancePlotsView from "@/views/LowBalancePlotsView.vue"
+import SiteVisitListView from "@/views/SiteVisitListView.vue"
+import SiteVisitSetupView from "@/views/SiteVisitSetupView.vue"
+import SiteVisitDetailView from "@/views/SiteVisitDetailView.vue"
+import SiteVisitCalendarView from "@/views/SiteVisitCalendarView.vue"
+import SiteVisitSettingsView from "@/views/SiteVisitSettingsView.vue"
 
 function stub(label, title) {
   return { component: ComingSoonView, props: { screen: label }, meta: { title } }
@@ -34,6 +39,16 @@ const routes = [
   { path: "/works/new", name: "work-new", component: WorkEntryView, meta: { title: "New Work" } },
   { path: "/works/:id", name: "work-detail", component: WorkDetailView, meta: { title: "Work" } },
   { path: "/low-balance-plots", name: "low-balance-plots", component: LowBalancePlotsView, meta: { title: "Low Balance Plots" } },
+  { path: "/site-visits", name: "site-visits", component: SiteVisitListView, meta: { title: "Site Visits" } },
+  { path: "/site-visits/new", name: "site-visit-new", component: SiteVisitSetupView, meta: { title: "New Site Visit" } },
+  { path: "/site-visits/calendar", name: "site-visit-calendar", component: SiteVisitCalendarView, meta: { title: "Visit Calendar" } },
+  { path: "/site-visits/:id", name: "site-visit-detail", component: SiteVisitDetailView, meta: { title: "Site Visit" } },
+  {
+    path: "/settings/site-visit-pricing",
+    name: "site-visit-settings",
+    component: SiteVisitSettingsView,
+    meta: { title: "Site Visit Pricing" },
+  },
   {
     path: "/invoices",
     name: "invoices",

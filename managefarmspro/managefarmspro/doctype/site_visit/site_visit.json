@@ -1,0 +1,235 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 0,
+ "autoname": "SV-.YYYY.-.#####",
+ "creation": "2026-08-14 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "customer",
+  "site_location",
+  "distance_km",
+  "notes",
+  "column_break_schedule",
+  "preferred_date",
+  "scheduled_date",
+  "status",
+  "section_break_pricing",
+  "distance_tier",
+  "base_charge",
+  "column_break_pricing",
+  "travel_expense",
+  "food_expense",
+  "accommodation_expense",
+  "total_amount",
+  "section_break_invoice",
+  "sales_invoice",
+  "section_break_inspection",
+  "visit_date",
+  "site_observations",
+  "findings",
+  "column_break_inspection",
+  "recommendations",
+  "inspection_notes",
+  "attachments",
+  "section_break_analysis",
+  "analysis_status"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "site_location",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Site Location",
+   "reqd": 1
+  },
+  {
+   "fieldname": "distance_km",
+   "fieldtype": "Float",
+   "label": "Distance (km)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "column_break_schedule",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "preferred_date",
+   "fieldtype": "Date",
+   "label": "Preferred Date"
+  },
+  {
+   "fieldname": "scheduled_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Scheduled Date"
+  },
+  {
+   "default": "Scheduled",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Scheduled\nVisited\nCompleted\nCancelled"
+  },
+  {
+   "fieldname": "section_break_pricing",
+   "fieldtype": "Section Break",
+   "label": "Pricing"
+  },
+  {
+   "description": "Derived from Site Visit Settings' pricing tiers based on Distance (km). Not editable.",
+   "fieldname": "distance_tier",
+   "fieldtype": "Data",
+   "label": "Distance Tier",
+   "read_only": 1
+  },
+  {
+   "description": "Computed from the matching pricing tier. Not editable.",
+   "fieldname": "base_charge",
+   "fieldtype": "Currency",
+   "label": "Base Charge",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_pricing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Forced to 0 when the matched tier includes travel & food in its base charge.",
+   "fieldname": "travel_expense",
+   "fieldtype": "Currency",
+   "label": "Travel Expense"
+  },
+  {
+   "description": "Forced to 0 when the matched tier includes travel & food in its base charge.",
+   "fieldname": "food_expense",
+   "fieldtype": "Currency",
+   "label": "Food Expense"
+  },
+  {
+   "description": "Forced to 0 when the matched tier includes accommodation in its base charge.",
+   "fieldname": "accommodation_expense",
+   "fieldtype": "Currency",
+   "label": "Accommodation Expense"
+  },
+  {
+   "bold": 1,
+   "description": "Base Charge + Travel + Food + Accommodation. Not editable.",
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Total Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_invoice",
+   "fieldtype": "Section Break",
+   "label": "Invoice"
+  },
+  {
+   "description": "Set once an invoice is generated for this visit. Payment status is always read live off this linked Sales Invoice, never duplicated here.",
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_inspection",
+   "fieldtype": "Section Break",
+   "label": "Inspection"
+  },
+  {
+   "fieldname": "visit_date",
+   "fieldtype": "Date",
+   "label": "Visit Date"
+  },
+  {
+   "fieldname": "site_observations",
+   "fieldtype": "Small Text",
+   "label": "Site Observations"
+  },
+  {
+   "fieldname": "findings",
+   "fieldtype": "Small Text",
+   "label": "Findings"
+  },
+  {
+   "fieldname": "column_break_inspection",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "recommendations",
+   "fieldtype": "Small Text",
+   "label": "Recommendations"
+  },
+  {
+   "fieldname": "inspection_notes",
+   "fieldtype": "Small Text",
+   "label": "Inspection Notes"
+  },
+  {
+   "fieldname": "attachments",
+   "fieldtype": "Table",
+   "label": "Attachments",
+   "options": "Site Visit Attachment"
+  },
+  {
+   "fieldname": "section_break_analysis",
+   "fieldtype": "Section Break",
+   "label": "Analysis"
+  },
+  {
+   "default": "Not Started",
+   "fieldname": "analysis_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Analysis Status",
+   "options": "Not Started\nDraft\nReady to Share\nShared"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-14 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Managefarmspro",
+ "name": "Site Visit",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "customer,site_location,scheduled_date",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "site_location"
+}

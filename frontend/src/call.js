@@ -45,3 +45,23 @@ export async function call(method, args = {}) {
 
   return body.message
 }
+
+// Frappe's file-upload endpoint needs multipart form data, not JSON — call()
+// above can't carry a File object, so this is a separate minimal client for
+// the one thing that needs it (Site Visit inspection attachments).
+export async function uploadFile(file, { doctype, docname, isPrivate = true } = {}) {
+  const form = new FormData()
+  form.append("file", file)
+  form.append("is_private", isPrivate ? "1" : "0")
+  if (doctype) form.append("doctype", doctype)
+  if (docname) form.append("docname", docname)
+
+  const res = await fetch("/api/method/upload_file", {
+    method: "POST",
+    headers: { "X-Frappe-CSRF-Token": window.csrf_token || "" },
+    body: form,
+  })
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(body._error_message || res.statusText)
+  return body.message
+}
