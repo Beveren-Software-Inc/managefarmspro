@@ -146,6 +146,7 @@ function selectFilter(item) {
             <div>
               <p class="text-[11px] uppercase tracking-wide text-muted">Scheduled</p>
               <p class="mt-1 font-medium text-foreground">{{ visit.scheduled_date ? formatDate(visit.scheduled_date) : "—" }}</p>
+              <p v-if="visit.slot" class="text-xs text-muted">{{ visit.slot }}</p>
             </div>
             <div>
               <p class="text-[11px] uppercase tracking-wide text-muted">Site</p>

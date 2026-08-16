@@ -4,7 +4,7 @@ import { useRoute, useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
 import RecordPicker from "@/components/RecordPicker.vue"
 import { fetchCustomers } from "@/data/customers.js"
-import { createSiteVisit, previewBaseCharge, checkDateAvailability } from "@/data/site_visits.js"
+import { createSiteVisit, previewBaseCharge, checkDateAvailability, fetchSiteVisitSlots } from "@/data/site_visits.js"
 import { formatCurrency } from "@/format.js"
 
 const route = useRoute()
@@ -31,16 +31,25 @@ function useDuplicateAsExisting() {
   duplicate.value = null
 }
 
+const slotDefs = ref([]) // configured slot definitions, independent of any date
+
 onMounted(async () => {
-  customers.value = await fetchCustomers()
+  ;[customers.value, slotDefs.value] = await Promise.all([fetchCustomers(), fetchSiteVisitSlots()])
 })
 
 // --- Site & schedule ---
 const siteLocation = ref("")
 const distanceKm = ref(null)
 const notes = ref("")
+const todayIso = new Date().toISOString().slice(0, 10)
 const preferredDate = ref("")
 const scheduledDate = ref(typeof route.query.date === "string" ? route.query.date : "")
+
+// Preferred date auto-fills Scheduled Date (and its availability check runs
+// via the existing watch below) — still freely editable afterward.
+watch(preferredDate, () => {
+  if (preferredDate.value) scheduledDate.value = preferredDate.value
+})
 
 // --- Live pricing preview — same get_pricing_tier the backend uses on save ---
 const pricing = ref(null)
@@ -72,20 +81,27 @@ const totalAmount = computed(() => {
   return base + travel + food + accommodation
 })
 
-// --- Availability — no double booking on scheduled_date ---
-const availability = ref(null)
+// --- Slot availability — up to one visit per slot per date, not per whole
+// day (client feedback: 2 visits/day is fine as long as they're different
+// slots, left to the user's own judgement whether that's practical) ---
+const slot = ref("")
+const slotAvailability = ref([]) // [{slot_label, start_time, end_time, available, conflicting_visit}]
 const checkingAvailability = ref(false)
 let availabilityTimer = null
 watch(
   scheduledDate,
   () => {
     clearTimeout(availabilityTimer)
-    availability.value = null
+    slotAvailability.value = []
     if (!scheduledDate.value) return
     checkingAvailability.value = true
     availabilityTimer = setTimeout(async () => {
       try {
-        availability.value = await checkDateAvailability(scheduledDate.value)
+        slotAvailability.value = await checkDateAvailability(scheduledDate.value)
+        // Deselect a slot that just became unavailable (e.g. date edited
+        // back to one already booked in the previously-chosen slot).
+        const chosen = slotAvailability.value.find((s) => s.slot_label === slot.value)
+        if (chosen && !chosen.available) slot.value = ""
       } finally {
         checkingAvailability.value = false
       }
@@ -94,9 +110,22 @@ watch(
   { immediate: true },
 )
 
+// Time fields come back over the wire as "HH:MM:SS" — trim to "HH:MM" for display.
+function formatTime(t) {
+  return typeof t === "string" ? t.slice(0, 5) : t
+}
+const slotOptions = computed(() =>
+  slotDefs.value.map((def) => {
+    const av = slotAvailability.value.find((s) => s.slot_label === def.slot_label)
+    return { ...def, available: av ? av.available : null, conflicting_visit: av?.conflicting_visit }
+  }),
+)
+
 const canSubmit = computed(() => {
-  if (!siteLocation.value.trim() || !distanceKm.value || distanceKm.value <= 0 || !scheduledDate.value) return false
-  if (availability.value && !availability.value.available) return false
+  if (!siteLocation.value.trim() || !distanceKm.value || distanceKm.value <= 0 || !scheduledDate.value || !slot.value) return false
+  if (scheduledDate.value < todayIso) return false
+  const chosen = slotAvailability.value.find((s) => s.slot_label === slot.value)
+  if (chosen && !chosen.available) return false
   if (clientMode.value === "customer" && !customerId.value) return false
   if (clientMode.value === "prospect" && !prospectName.value.trim()) return false
   return true
@@ -116,6 +145,7 @@ async function submit() {
       notes: notes.value || null,
       preferred_date: preferredDate.value || null,
       scheduled_date: scheduledDate.value,
+      slot: slot.value,
       travel_expense: pricing.value?.travel_food_included ? 0 : travelExpense.value || 0,
       food_expense: pricing.value?.travel_food_included ? 0 : foodExpense.value || 0,
       accommodation_expense: pricing.value?.accommodation_included ? 0 : accommodationExpense.value || 0,
@@ -231,19 +261,34 @@ async function submit() {
             </label>
             <label class="block">
               <span class="text-sm text-muted mb-1.5 block">Preferred Date</span>
-              <input v-model="preferredDate" type="date" class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              <input v-model="preferredDate" type="date" :min="todayIso" class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
             </label>
             <label class="block sm:col-span-2">
               <span class="text-sm text-muted mb-1.5 block">Scheduled Date <span class="text-negative">*</span></span>
-              <input v-model="scheduledDate" type="date" class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-              <p v-if="checkingAvailability" class="text-xs text-muted mt-1.5">Checking availability…</p>
-              <p v-else-if="availability && !availability.available" class="text-xs text-negative mt-1.5 flex items-center gap-1">
-                <AppIcon name="alert" :size="13" /> Already booked by {{ availability.conflicting_visit }} — pick another date.
-              </p>
-              <p v-else-if="availability && availability.available" class="text-xs text-positive mt-1.5 flex items-center gap-1">
-                <AppIcon name="check" :size="13" /> Date is available.
-              </p>
+              <input v-model="scheduledDate" type="date" :min="todayIso" class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
             </label>
+            <div class="block sm:col-span-2">
+              <span class="text-sm text-muted mb-1.5 block">Slot <span class="text-negative">*</span></span>
+              <p v-if="!scheduledDate" class="text-xs text-muted">Pick a date first to see slot availability.</p>
+              <p v-else-if="checkingAvailability" class="text-xs text-muted">Checking availability…</p>
+              <div v-else class="grid gap-2 sm:grid-cols-2">
+                <button
+                  v-for="s in slotOptions"
+                  :key="s.slot_label"
+                  type="button"
+                  :disabled="s.available === false"
+                  class="rounded-xl border p-3 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  :class="slot === s.slot_label ? 'border-primary bg-primary-soft/60 ring-2 ring-primary/10' : 'border-border hover:bg-surface-muted'"
+                  @click="slot = s.slot_label"
+                >
+                  <p class="font-semibold text-foreground text-sm">{{ s.slot_label }}</p>
+                  <p class="text-xs text-muted">{{ formatTime(s.start_time) }} – {{ formatTime(s.end_time) }}</p>
+                  <p v-if="s.available === false" class="mt-1 text-xs text-negative flex items-center gap-1">
+                    <AppIcon name="alert" :size="12" /> Booked by {{ s.conflicting_visit }}
+                  </p>
+                </button>
+              </div>
+            </div>
             <label class="block sm:col-span-2">
               <span class="text-sm text-muted mb-1.5 block">Notes</span>
               <textarea v-model="notes" rows="3" class="w-full resize-none rounded-lg bg-background border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="Access instructions, preparation notes…"></textarea>

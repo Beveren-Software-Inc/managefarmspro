@@ -14,6 +14,7 @@ const LIST_FIELDS = [
   "distance_tier",
   "preferred_date",
   "scheduled_date",
+  "slot",
   "status",
   "base_charge",
   "total_amount",
@@ -72,8 +73,15 @@ export async function previewBaseCharge(distanceKm) {
   return call(`${SITE_VISIT_MODULE}.preview_base_charge`, { distance_km: distanceKm })
 }
 
+// Returns one row per configured slot: {slot_label, start_time, end_time,
+// available, conflicting_visit} — not a single day-level boolean, since up
+// to one visit per slot per day is now allowed.
 export async function checkDateAvailability(scheduledDate, exclude) {
   return call(`${SITE_VISIT_MODULE}.check_date_availability`, { scheduled_date: scheduledDate, exclude })
+}
+
+export async function fetchSiteVisitSlots() {
+  return call(`${SITE_VISIT_MODULE}.fetch_slots`)
 }
 
 // Resolves/creates the Customer (existing-vs-prospect, same duplicate-check

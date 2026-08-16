@@ -304,7 +304,10 @@ const canCancel = computed(() => visit.value?.status === "Scheduled")
           <div class="mt-4 flex items-center gap-3">
             <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-soft text-primary"><AppIcon name="calendar" :size="19" /></div>
             <div>
-              <p class="font-semibold text-foreground">{{ visit.scheduled_date ? formatDate(visit.scheduled_date) : "Not scheduled" }}</p>
+              <p class="font-semibold text-foreground">
+                {{ visit.scheduled_date ? formatDate(visit.scheduled_date) : "Not scheduled" }}
+                <span v-if="visit.slot" class="ml-1 text-xs font-semibold text-primary">· {{ visit.slot }}</span>
+              </p>
               <p v-if="visit.preferred_date" class="text-sm text-muted">Preferred: {{ formatDate(visit.preferred_date) }}</p>
             </div>
           </div>

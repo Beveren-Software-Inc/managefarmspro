@@ -250,7 +250,7 @@ fixtures = [
 # Include the custom JS file for Work Doctype
 doctype_js = {"Work": "public/js/work.js"}
 
-after_migrate = "managefarmspro.managefarmspro.doctype.site_visit_settings.site_visit_settings.seed_default_pricing_tiers"
+after_migrate = "managefarmspro.managefarmspro.doctype.site_visit_settings.site_visit_settings.seed_defaults"
 
 doc_events = {
 	"Work": {

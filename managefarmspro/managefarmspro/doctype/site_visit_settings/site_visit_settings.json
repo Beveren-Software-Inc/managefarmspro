@@ -4,7 +4,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "pricing_tiers"
+  "pricing_tiers",
+  "slots"
  ],
  "fields": [
   {
@@ -13,6 +14,13 @@
    "fieldtype": "Table",
    "label": "Pricing Tiers",
    "options": "Site Visit Pricing Tier"
+  },
+  {
+   "description": "One Site Visit can be booked per slot per day — this is what makes multiple visits on the same day possible (one per slot) while still blocking a double-booking within the same slot. Add, remove, rename, or retime slots freely; a day's capacity is simply however many slots are configured here.",
+   "fieldname": "slots",
+   "fieldtype": "Table",
+   "label": "Daily Slots",
+   "options": "Site Visit Slot"
   }
  ],
  "index_web_pages_for_search": 1,

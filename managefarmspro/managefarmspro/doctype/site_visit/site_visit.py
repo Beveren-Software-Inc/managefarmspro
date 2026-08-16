@@ -8,7 +8,7 @@ import time
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import add_days, flt, today
+from frappe.utils import add_days, flt, getdate, today
 from frappe.utils.pdf import get_pdf
 
 # Same company used by the app's other real Sales Invoice pipeline
@@ -24,27 +24,48 @@ ACTIVE_STATUSES_FOR_AVAILABILITY = ["Scheduled", "Visited", "Completed"]
 
 class SiteVisit(Document):
 	def validate(self):
+		self.validate_not_past_date()
+		self.validate_slot()
 		self.check_availability()
 		self.set_pricing()
 
-	def check_availability(self):
-		"""No double booking: a scheduled_date already held by another active
-		Site Visit blocks this one, enforced here so it holds regardless of
-		caller (SPA or Desk), not just whatever the SPA's calendar happens to
-		show before submit."""
+	def validate_not_past_date(self):
+		"""Only enforced on creation — a Site Visit already scheduled for
+		today naturally moves into the past by the time it's Visited/
+		Completed, and every later save (inspection notes, status, invoice)
+		must still go through, so this can't be a blanket check on every
+		save."""
+		if self.is_new() and self.scheduled_date and getdate(self.scheduled_date) < getdate(today()):
+			frappe.throw(_("Scheduled Date cannot be in the past."))
+
+	def validate_slot(self):
 		if not self.scheduled_date:
+			return
+		labels = get_slot_labels()
+		if self.slot not in labels:
+			frappe.throw(_("Slot must be one of: {0}").format(", ".join(labels)))
+
+	def check_availability(self):
+		"""Up to one Site Visit per slot per date — client feedback after the
+		demo was that 2 visits/day is fine as long as they're in different
+		slots (whether two far-apart sites are practical same-day is left to
+		the user's own judgement, not enforced here). Enforced here so it
+		holds regardless of caller (SPA or Desk), not just whatever the SPA's
+		calendar happens to show before submit."""
+		if not self.scheduled_date or not self.slot:
 			return
 		conflict = frappe.db.get_value(
 			"Site Visit",
 			{
 				"scheduled_date": self.scheduled_date,
+				"slot": self.slot,
 				"status": ["in", ACTIVE_STATUSES_FOR_AVAILABILITY],
 				"name": ["!=", self.name or ""],
 			},
 			"name",
 		)
 		if conflict:
-			frappe.throw(_("{0} is already booked for another Site Visit ({1}).").format(self.scheduled_date, conflict))
+			frappe.throw(_("The {0} slot on {1} is already booked by another Site Visit ({2}).").format(self.slot, self.scheduled_date, conflict))
 
 	def set_pricing(self):
 		"""Single place base_charge is ever computed — see get_pricing_tier
@@ -99,18 +120,49 @@ def preview_base_charge(distance_km):
 	}
 
 
+def get_slots():
+	"""Reads Site Visit Settings' admin-configurable slots. A day's capacity
+	is simply however many rows are configured here — not a hardcoded 2."""
+	settings = frappe.get_single("Site Visit Settings")
+	if not settings.slots:
+		frappe.throw(_("No daily slots configured in Site Visit Settings. Ask a System Manager to set them up."))
+	return settings.slots
+
+
+def get_slot_labels():
+	return [s.slot_label for s in get_slots()]
+
+
+@frappe.whitelist()
+def fetch_slots():
+	"""Slot definitions for the creation form's picker."""
+	return [{"slot_label": s.slot_label, "start_time": s.start_time, "end_time": s.end_time} for s in get_slots()]
+
+
 @frappe.whitelist()
 def check_date_availability(scheduled_date, exclude=None):
-	"""Non-throwing counterpart to check_availability() above, for the
-	calendar/creation-form to query before submit."""
-	filters = {
-		"scheduled_date": scheduled_date,
-		"status": ["in", ACTIVE_STATUSES_FOR_AVAILABILITY],
-	}
-	if exclude:
-		filters["name"] = ["!=", exclude]
-	conflict = frappe.db.get_value("Site Visit", filters, "name")
-	return {"available": not conflict, "conflicting_visit": conflict}
+	"""Non-throwing per-slot availability for a date — one row per configured
+	slot, for the calendar/creation-form to query before submit."""
+	booked = frappe.get_all(
+		"Site Visit",
+		filters={
+			"scheduled_date": scheduled_date,
+			"status": ["in", ACTIVE_STATUSES_FOR_AVAILABILITY],
+			**({"name": ["!=", exclude]} if exclude else {}),
+		},
+		fields=["name", "slot"],
+	)
+	booked_by_slot = {b.slot: b.name for b in booked}
+	return [
+		{
+			"slot_label": s.slot_label,
+			"start_time": s.start_time,
+			"end_time": s.end_time,
+			"available": s.slot_label not in booked_by_slot,
+			"conflicting_visit": booked_by_slot.get(s.slot_label),
+		}
+		for s in get_slots()
+	]
 
 
 # Same existing-vs-prospect duplicate-check UX as Estimate's own
@@ -131,6 +183,7 @@ def create_site_visit(
 	notes=None,
 	preferred_date=None,
 	scheduled_date=None,
+	slot=None,
 	travel_expense=0,
 	food_expense=0,
 	accommodation_expense=0,
@@ -171,13 +224,15 @@ def create_site_visit(
 			"notes": notes,
 			"preferred_date": preferred_date,
 			"scheduled_date": scheduled_date,
+			"slot": slot,
 			"travel_expense": travel_expense or 0,
 			"food_expense": food_expense or 0,
 			"accommodation_expense": accommodation_expense or 0,
 		}
 	)
 	doc.insert()
-	doc.add_comment("Info", _("Site Visit requested for {0}.").format(scheduled_date or "an unscheduled date"))
+	when = f"{scheduled_date} ({slot})" if scheduled_date and slot else scheduled_date or "an unscheduled date"
+	doc.add_comment("Info", _("Site Visit requested for {0}.").format(when))
 	return doc
 
 

@@ -31,6 +31,20 @@ function removeTier(index) {
   settings.value.pricing_tiers.splice(index, 1)
 }
 
+// A day's booking capacity is simply however many slots are configured here
+// — client feedback after the demo was that 2 visits/day (different slots)
+// is fine, but this isn't hardcoded to 2.
+function addSlot() {
+  settings.value.slots.push({ slot_label: "", start_time: "", end_time: "" })
+}
+function removeSlot(index) {
+  settings.value.slots.splice(index, 1)
+}
+// Time fields round-trip as "HH:MM:SS" but <input type="time"> needs "HH:MM".
+function timeValue(t) {
+  return typeof t === "string" ? t.slice(0, 5) : t
+}
+
 const saving = ref(false)
 const saved = ref(false)
 async function save() {
@@ -104,6 +118,35 @@ async function save() {
       <button class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap w-full rounded-xl border border-dashed border-border py-3 text-sm font-semibold text-muted hover:border-primary/40 hover:text-primary" @click="addTier">
         <AppIcon name="plus" :size="16" /> Add Tier
       </button>
+
+      <div class="pt-4">
+        <h2 class="font-semibold text-foreground">Daily Slots</h2>
+        <p class="text-xs text-muted mt-1 mb-4">One Site Visit can be booked per slot per day — this is what allows more than one visit on the same date.</p>
+
+        <section v-for="(s, index) in settings.slots" :key="index" class="rounded-2xl border border-border bg-surface p-5 mb-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="grid gap-4 flex-1 md:grid-cols-[1fr_140px_140px]">
+              <label class="text-sm font-medium text-foreground">
+                Slot Label
+                <input v-model="s.slot_label" class="mt-2 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm" />
+              </label>
+              <label class="text-sm font-medium text-foreground">
+                Start Time
+                <input :value="timeValue(s.start_time)" @input="s.start_time = $event.target.value" type="time" class="mt-2 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm" />
+              </label>
+              <label class="text-sm font-medium text-foreground">
+                End Time
+                <input :value="timeValue(s.end_time)" @input="s.end_time = $event.target.value" type="time" class="mt-2 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm" />
+              </label>
+            </div>
+            <button class="rounded-lg p-2 text-muted hover:bg-negative-soft hover:text-negative" @click="removeSlot(index)"><AppIcon name="trash" :size="16" /></button>
+          </div>
+        </section>
+
+        <button class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap w-full rounded-xl border border-dashed border-border py-3 text-sm font-semibold text-muted hover:border-primary/40 hover:text-primary" @click="addSlot">
+          <AppIcon name="plus" :size="16" /> Add Slot
+        </button>
+      </div>
     </div>
   </div>
 </template>
