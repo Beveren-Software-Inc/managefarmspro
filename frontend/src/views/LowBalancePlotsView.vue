@@ -4,7 +4,7 @@ import { useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
 import StatusBadge from "@/components/StatusBadge.vue"
 import BalancePill from "@/components/BalancePill.vue"
-import { fetchLowBalancePlots } from "@/data/plots.js"
+import { fetchLowBalancePlots, downloadLowBalancePlotsPdf } from "@/data/plots.js"
 import { formatCurrency } from "@/format.js"
 
 const router = useRouter()
@@ -26,6 +26,21 @@ async function load() {
   }
 }
 onMounted(load)
+
+const downloading = ref(false)
+const downloadError = ref(null)
+async function downloadPdf() {
+  downloading.value = true
+  downloadError.value = null
+  try {
+    const url = await downloadLowBalancePlotsPdf(threshold.value)
+    window.open(url, "_blank")
+  } catch (e) {
+    downloadError.value = e.messages?.[0] || e.message || "Failed to generate the PDF."
+  } finally {
+    downloading.value = false
+  }
+}
 </script>
 
 <template>
@@ -35,21 +50,31 @@ onMounted(load)
         <h1 class="font-display text-2xl font-semibold text-foreground">Low Balance Plots</h1>
         <p class="mt-1 text-sm text-muted">Plots with a monthly maintenance budget set whose balance has reached or dropped below the threshold below.</p>
       </div>
-      <label class="block w-full sm:w-56">
-        <span class="text-xs text-muted mb-1.5 block">Maintenance Balance Below</span>
-        <div class="relative">
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">₹</span>
-          <input
-            v-model.number="threshold"
-            type="number"
-            step="0.01"
-            class="w-full pl-7 pr-3 py-2.5 rounded-lg bg-surface border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-            @change="load"
-          />
-        </div>
-      </label>
+      <div class="flex items-end gap-3">
+        <label class="block w-full sm:w-56">
+          <span class="text-xs text-muted mb-1.5 block">Maintenance Balance Below</span>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">₹</span>
+            <input
+              v-model.number="threshold"
+              type="number"
+              step="0.01"
+              class="w-full pl-7 pr-3 py-2.5 rounded-lg bg-surface border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              @change="load"
+            />
+          </div>
+        </label>
+        <button
+          :disabled="downloading || loading || !rows.length"
+          class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-surface-muted disabled:opacity-50"
+          @click="downloadPdf"
+        >
+          <AppIcon name="download" :size="16" /> {{ downloading ? "Generating…" : "Download PDF" }}
+        </button>
+      </div>
     </div>
 
+    <p v-if="downloadError" class="text-sm text-negative bg-negative-soft rounded-lg px-3 py-2">{{ downloadError }}</p>
     <div v-if="error" class="text-center py-16 text-negative bg-negative-soft rounded-xl">{{ error }}</div>
     <p v-else-if="loading" class="text-sm text-muted text-center py-16">Loading…</p>
     <p v-else-if="!rows.length" class="text-sm text-muted text-center py-16 bg-surface border border-border rounded-xl">

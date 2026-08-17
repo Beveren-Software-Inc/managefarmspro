@@ -2,6 +2,7 @@
 import { ref, reactive, computed, onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
+import BackButton from "@/components/BackButton.vue"
 import StatusBadge from "@/components/StatusBadge.vue"
 import BalancePill from "@/components/BalancePill.vue"
 import LineItemsTable from "@/components/LineItemsTable.vue"
@@ -9,6 +10,7 @@ import RecordPicker from "@/components/RecordPicker.vue"
 import ConfirmDialog from "@/components/ConfirmDialog.vue"
 import { fetchWork, workStatus, laborLines, equipmentLines, materialLines } from "@/data/works.js"
 import { fetchPlotDetail, plotBalance } from "@/data/plots.js"
+import { fetchFarmProjectDetail, farmProjectBalance } from "@/data/farm_projects.js"
 import { fetchWorkItems, fetchItemOptions, fromChildRow, updateWork, submitWork, cancelWork } from "@/data/work_entry.js"
 import { useLineItemSections } from "@/composables/useLineItemSections.js"
 import { formatCurrency, formatDate } from "@/format.js"
@@ -20,6 +22,7 @@ const loading = ref(true)
 const error = ref(null)
 const work = ref(null)
 const plot = ref(null)
+const farmProject = ref(null)
 
 const isDraft = computed(() => work.value?.docstatus === 0)
 const isSubmitted = computed(() => work.value?.docstatus === 1)
@@ -51,6 +54,10 @@ const displayTotal = computed(() => (isDraft.value ? draftTotal.value : work.val
 async function loadWork() {
   work.value = await fetchWork(route.params.id)
   plot.value = await fetchPlotDetail(work.value.plot)
+  // Work tied to a Farm Project draws against that project's own budget, not
+  // the plot's monthly maintenance budget — same context switch already
+  // applied to the New Work entry form's Budget Context card.
+  farmProject.value = work.value.farm_project ? await fetchFarmProjectDetail(work.value.farm_project) : null
 
   form.work_type_name = work.value.work_type_name
   form.work_date = work.value.work_date
@@ -178,9 +185,7 @@ async function doCancel() {
   <div v-else-if="error" class="text-center py-16 text-negative bg-negative-soft rounded-xl">{{ error }}</div>
 
   <div v-else-if="work" class="space-y-6">
-    <button class="flex items-center gap-1.5 text-sm text-muted hover:text-foreground" @click="router.push('/works')">
-      <AppIcon name="arrowLeft" :size="16" /> Back to Works
-    </button>
+    <BackButton fallback="/works" fallback-label="Back to Works" />
 
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-start gap-4">
@@ -336,7 +341,16 @@ async function doCancel() {
 
       <!-- Context sidebar -->
       <div class="space-y-4">
-        <div v-if="plot" class="bg-surface border border-border rounded-xl p-5">
+        <div v-if="farmProject" class="bg-surface border border-border rounded-xl p-5">
+          <h4 class="font-medium text-foreground mb-3">Farm Project Context</h4>
+          <dl class="text-sm divide-y divide-border">
+            <div class="flex justify-between py-2.5"><dt class="text-muted">Project</dt><dd class="text-foreground">{{ farmProject.name }}</dd></div>
+            <div class="flex justify-between py-2.5"><dt class="text-muted">Customer</dt><dd class="text-foreground text-right">{{ farmProject.customer }}</dd></div>
+            <div class="flex justify-between py-2.5"><dt class="text-muted">Total Budget</dt><dd class="text-foreground tabular-nums">{{ formatCurrency(farmProject.estimated_cost) }}</dd></div>
+            <div class="flex justify-between py-2.5 items-center"><dt class="text-muted">Current Balance</dt><dd><BalancePill :balance="farmProjectBalance(farmProject)" :budget="farmProject.estimated_cost" size="sm" /></dd></div>
+          </dl>
+        </div>
+        <div v-else-if="plot" class="bg-surface border border-border rounded-xl p-5">
           <h4 class="font-medium text-foreground mb-3">Plot Context</h4>
           <dl class="text-sm divide-y divide-border">
             <div class="flex justify-between py-2.5"><dt class="text-muted">Plot</dt><dd class="text-foreground">{{ plot.plot_name }}</dd></div>

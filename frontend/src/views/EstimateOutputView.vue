@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
+import BackButton from "@/components/BackButton.vue"
 import StatusBadge from "@/components/StatusBadge.vue"
 import { fetchEstimateWithProject, estimateStatusLabel, areaLabel, downloadEstimatePdf } from "@/data/estimates.js"
 import { formatCurrency, formatDate } from "@/format.js"
@@ -156,9 +157,7 @@ async function downloadPdf() {
   <div v-else class="max-w-5xl mx-auto space-y-6">
     <!-- Header -->
     <div class="flex items-center gap-3 no-print">
-      <button class="text-muted hover:text-foreground p-1 rounded-lg hover:bg-surface-muted transition-colors" @click="router.push(`/estimates/${doc.name}`)">
-        <AppIcon name="arrowLeft" :size="20" />
-      </button>
+      <BackButton variant="icon" :fallback="`/estimates/${doc.name}`" fallback-label="Back to Estimate" />
       <div>
         <h2 class="font-display text-2xl font-semibold text-foreground">Documents — {{ doc.name }}</h2>
         <p class="text-sm text-muted mt-0.5">Preview output documents generated from this estimate.</p>

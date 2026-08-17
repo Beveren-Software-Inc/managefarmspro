@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			/* wkhtmltopdf (QtWebKit 4.8) does not reliably render flexbox —
+			   table layout throughout, same lesson as client_estimate.html
+			   and site_visit_invoice.html. */
+			body {
+				font-family: Arial, sans-serif;
+				color: #333;
+			}
+			.header-table {
+				width: 100%;
+				border-collapse: collapse;
+				border-bottom: 2px solid #003366;
+				padding-bottom: 15px;
+				margin-bottom: 15px;
+			}
+			.header-table td {
+				vertical-align: top;
+				padding-bottom: 15px;
+			}
+			.header-table .company h2 {
+				margin: 0;
+				color: #003366;
+			}
+			.header-table .company p {
+				margin: 0;
+				font-size: 12px;
+			}
+			.header-table .logo {
+				width: 110px;
+				text-align: right;
+			}
+			.header-table .logo img {
+				width: 100px;
+			}
+			.main-container {
+				padding: 0 20px 20px;
+			}
+			h1.title {
+				text-align: center;
+				color: #003366;
+				font-size: 20px;
+				margin: 15px 0 4px;
+			}
+			p.subtitle {
+				text-align: center;
+				color: #666;
+				font-size: 12px;
+				margin: 0 0 20px;
+			}
+			table.items {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 15px 0;
+			}
+			table.items th,
+			table.items td {
+				border: 1px solid #ddd;
+				padding: 7px 8px;
+				font-size: 12px;
+			}
+			table.items th {
+				background-color: #f0f4f8;
+				text-align: left;
+				color: #003366;
+			}
+			table.items td.num,
+			table.items th.num {
+				text-align: right;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="main-container">
+			<table class="header-table">
+				<tr>
+					<td class="company">
+						<h2>Philosan Farm Management</h2>
+						<p>VP 8/698A, Kolakkattu House, Edapal, Malappuram, Kerala, India</p>
+						<p>Phone no.: 7411170252</p>
+					</td>
+					<td class="logo"><img src="/files/philosan-logo.png" alt="Philosan" /></td>
+				</tr>
+			</table>
+
+			<h1 class="title">Upcoming Site Visits</h1>
+			<p class="subtitle">{{ date_from }} to {{ date_to }} · Generated {{ generated_on }}</p>
+
+			<table class="items">
+				<thead>
+					<tr>
+						<th>Date</th>
+						<th>Slot</th>
+						<th>Client</th>
+						<th>Site Location</th>
+						<th class="num">Distance (km)</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for r in rows %}
+					<tr>
+						<td>{{ frappe.utils.formatdate(r.scheduled_date) }}</td>
+						<td>{{ r.slot or "" }}</td>
+						<td>{{ r.customer_name or r.customer }}</td>
+						<td>{{ r.site_location }}</td>
+						<td class="num">{{ r.distance_km }}</td>
+					</tr>
+					{% else %}
+					<tr>
+						<td colspan="5" style="text-align: center; color: #666">No site visits scheduled in this date range.</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</body>
+</html>

@@ -2,6 +2,7 @@
 import { ref, reactive, computed, onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
+import BackButton from "@/components/BackButton.vue"
 import RecordPicker from "@/components/RecordPicker.vue"
 import FilterCombobox from "@/components/FilterCombobox.vue"
 import ConfirmDialog from "@/components/ConfirmDialog.vue"
@@ -165,9 +166,7 @@ async function doSave() {
   <div v-else class="max-w-4xl mx-auto space-y-6">
     <!-- Header -->
     <div class="flex items-center gap-3">
-      <button class="text-muted hover:text-foreground p-1 rounded-lg hover:bg-surface-muted transition-colors" @click="router.push('/category-templates')">
-        <AppIcon name="arrowLeft" :size="20" />
-      </button>
+      <BackButton variant="icon" fallback="/category-templates" fallback-label="Back to Category Templates" />
       <div class="flex-1">
         <div class="flex items-center gap-2 mb-0.5">
           <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-muted text-[11px] font-semibold text-muted">

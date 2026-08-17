@@ -5,6 +5,7 @@ import AppIcon from "@/components/AppIcon.vue"
 import StatusBadge from "@/components/StatusBadge.vue"
 import BalancePill from "@/components/BalancePill.vue"
 import TabNav from "@/components/TabNav.vue"
+import BackButton from "@/components/BackButton.vue"
 import { fetchPlotDetail, plotBalance } from "@/data/plots.js"
 import { fetchFarmProjectsForPlot, farmProjectBalance } from "@/data/farm_projects.js"
 import { formatCurrency, formatDate } from "@/format.js"
@@ -59,9 +60,7 @@ const spentPct = computed(() =>
           : 'space-y-6'
       "
     >
-      <button class="flex items-center gap-1.5 text-sm text-muted hover:text-foreground" @click="router.push('/plots')">
-        <AppIcon name="arrowLeft" :size="16" /> Back to Plots
-      </button>
+      <BackButton fallback="/plots" fallback-label="Back to Plots" />
 
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center gap-4">

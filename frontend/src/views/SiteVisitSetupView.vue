@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
+import BackButton from "@/components/BackButton.vue"
 import RecordPicker from "@/components/RecordPicker.vue"
 import { fetchCustomers } from "@/data/customers.js"
 import { createSiteVisit, previewBaseCharge, checkDateAvailability, fetchSiteVisitSlots } from "@/data/site_visits.js"
@@ -176,7 +177,7 @@ async function submit() {
 <template>
   <div class="max-w-[1200px] mx-auto">
     <div class="flex items-center gap-3 mb-6">
-      <button class="rounded-lg p-2 text-muted hover:bg-surface-muted" @click="router.back()"><AppIcon name="arrowLeft" :size="18" /></button>
+      <BackButton variant="icon" fallback="/site-visits" fallback-label="Back to Site Visits" />
       <div>
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary mb-1">Site Visits</p>
         <h1 class="font-display text-2xl font-semibold text-foreground">New Site Visit</h1>

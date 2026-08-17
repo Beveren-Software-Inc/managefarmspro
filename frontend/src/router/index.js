@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router"
+import { recordVisit } from "@/navigationHistory.js"
 import ComingSoonView from "@/views/ComingSoonView.vue"
 import DashboardView from "@/views/DashboardView.vue"
 import CustomerListView from "@/views/CustomerListView.vue"
@@ -89,5 +90,9 @@ const router = createRouter({
     return { top: 0 }
   },
 })
+
+// Feeds BackButton.vue's shared in-app navigation history — see
+// navigationHistory.js for why this is in-memory-only.
+router.afterEach((to) => recordVisit(to))
 
 export default router

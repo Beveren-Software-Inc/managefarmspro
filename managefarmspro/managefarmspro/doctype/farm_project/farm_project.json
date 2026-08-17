@@ -85,7 +85,7 @@
   {
    "fieldname": "tasks",
    "fieldtype": "Table",
-   "label": "Tasks",
+   "label": "Milestones",
    "options": "Farm Project Task"
   }
  ],

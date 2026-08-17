@@ -4,10 +4,15 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import now_datetime
 
 
 class Estimate(Document):
-	pass
+	def on_submit(self):
+		# db_set, not self.approved_on = ...; on_submit runs after the doc is
+		# already saved for this transition, so this needs its own targeted
+		# write rather than relying on another full save().
+		self.db_set("approved_on", now_datetime())
 
 
 # Customer/Plot linking is deliberately NOT wired to on_submit (or any

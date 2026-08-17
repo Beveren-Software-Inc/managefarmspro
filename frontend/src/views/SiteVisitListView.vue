@@ -3,6 +3,7 @@ import { ref, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
 import StatusBadge from "@/components/StatusBadge.vue"
+import SiteVisitReportDialog from "@/components/SiteVisitReportDialog.vue"
 import { fetchSiteVisits, fetchSiteVisitStatusCounts, SITE_VISIT_STATUSES, SITE_VISIT_PAGE_SIZE } from "@/data/site_visits.js"
 import { formatCurrency, formatDate } from "@/format.js"
 
@@ -13,6 +14,7 @@ const loadingMore = ref(false)
 const error = ref(null)
 const visits = ref([])
 const hasMore = ref(false)
+const showReportDialog = ref(false)
 // Counts are true totals per status (own COUNT queries) — deliberately not
 // derived from `visits`, since that's now only ever a page at a time.
 const counts = ref({})
@@ -77,6 +79,12 @@ function selectFilter(item) {
       <div class="flex items-center gap-2">
         <button
           class="inline-flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-surface-muted"
+          @click="showReportDialog = true"
+        >
+          <AppIcon name="download" :size="17" /> Report
+        </button>
+        <button
+          class="inline-flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-surface-muted"
           @click="router.push('/site-visits/calendar')"
         >
           <AppIcon name="calendar" :size="17" /> Calendar
@@ -89,6 +97,8 @@ function selectFilter(item) {
         </button>
       </div>
     </div>
+
+    <SiteVisitReportDialog v-if="showReportDialog" @close="showReportDialog = false" />
 
     <section class="grid grid-cols-2 lg:grid-cols-5 gap-3">
       <div v-for="item in filters" :key="item" class="rounded-2xl border border-border bg-surface px-4 py-4">

@@ -9,6 +9,7 @@
  "is_submittable": 1,
  "field_order": [
   "amended_from",
+  "approved_on",
   "section_break_client",
   "customer",
   "client_name",
@@ -51,6 +52,14 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "description": "Set once, in on_submit, when this Estimate is Approved. Used to detect stalled Approved-but-not-Converted estimates on the Dashboard — deliberately not `modified`, which would reset on any later edit (e.g. linking a plot) and hide a genuinely stuck estimate.",
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "no_copy": 1,
+   "read_only": 1
   },
   {
    "fieldname": "section_break_client",

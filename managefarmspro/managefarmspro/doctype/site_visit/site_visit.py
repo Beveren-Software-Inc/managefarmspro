@@ -1,15 +1,12 @@
 # Copyright (c) 2026, FigAi GenAi Solutions and contributors
 # For license information, please see license.txt
 
-import os
-import random
-import time
-
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import add_days, flt, getdate, today
-from frappe.utils.pdf import get_pdf
+from frappe.utils import add_days, flt, getdate, now_datetime, today
+
+from managefarmspro.managefarmspro.utils import save_pdf_and_get_url
 
 # Same company used by the app's other real Sales Invoice pipeline
 # (collated_plot_invoice.py) — not a new constant, just not importable
@@ -368,34 +365,31 @@ def download_invoice_pdf(site_visit):
 		"amount_in_words": frappe.utils.money_in_words(invoice.grand_total),
 	}
 	html = frappe.render_template("managefarmspro/templates/site_visit_invoice.html", context)
-	pdf_file = get_pdf(html)
+	return save_pdf_and_get_url(html, invoice.name, "Sales Invoice", invoice.name)
 
-	request = frappe.request
-	host = request.headers.get("Host")
-	forwarded_proto = request.headers.get("X-Forwarded-Proto", "http")
-	original_host = request.headers.get("X-Forwarded-Host", host)
-	base_url = f"{forwarded_proto}://{original_host}"
 
-	timestamp = int(time.time())
-	random_number = random.randint(1000, 9999)
-	file_name = f"{invoice.name}-{timestamp}{random_number}.pdf"
+# Client-requested: a PDF of Site Visits scheduled within a given date range,
+# for supervisors — not attached to any single Site Visit (it's a snapshot
+# across many), so no attached_to_doctype/name.
+@frappe.whitelist()
+def download_upcoming_pdf(date_from, date_to):
+	if getdate(date_from) > getdate(date_to):
+		frappe.throw(_("From date must be on or before To date."))
 
-	file_path = f"private/files/{file_name}"
-	full_file_path = frappe.get_site_path(file_path)
-	os.makedirs(os.path.dirname(full_file_path), exist_ok=True)
-	with open(full_file_path, "wb") as f:
-		f.write(pdf_file)
-
-	file_doc = frappe.get_doc(
-		{
-			"doctype": "File",
-			"file_name": file_name,
-			"file_url": f"/private/files/{file_name}",
-			"attached_to_doctype": "Sales Invoice",
-			"attached_to_name": invoice.name,
-			"is_private": 1,
-		}
+	rows = frappe.get_all(
+		"Site Visit",
+		filters={
+			"status": "Scheduled",
+			"scheduled_date": ["between", [date_from, date_to]],
+		},
+		fields=["name", "customer", "customer.customer_name as customer_name", "site_location", "distance_km", "scheduled_date", "slot"],
+		order_by="scheduled_date asc, slot asc",
 	)
-	file_doc.insert(ignore_permissions=True)
-
-	return f"{base_url}{file_doc.file_url}"
+	context = {
+		"rows": rows,
+		"date_from": frappe.utils.formatdate(date_from),
+		"date_to": frappe.utils.formatdate(date_to),
+		"generated_on": frappe.utils.format_datetime(now_datetime(), "dd-MM-yyyy hh:mm a"),
+	}
+	html = frappe.render_template("managefarmspro/templates/site_visits_report.html", context)
+	return save_pdf_and_get_url(html, "Upcoming-Site-Visits")

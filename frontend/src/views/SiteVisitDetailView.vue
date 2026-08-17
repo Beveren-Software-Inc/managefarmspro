@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
+import BackButton from "@/components/BackButton.vue"
 import StatusBadge from "@/components/StatusBadge.vue"
 import ConfirmDialog from "@/components/ConfirmDialog.vue"
 import {
@@ -177,7 +178,7 @@ const canCancel = computed(() => visit.value?.status === "Scheduled")
   <div v-else class="max-w-[1400px] mx-auto space-y-5">
     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
       <div class="flex items-start gap-3">
-        <button class="rounded-lg p-2 text-muted hover:bg-surface-muted" @click="router.push('/site-visits')"><AppIcon name="arrowLeft" :size="18" /></button>
+        <BackButton variant="icon" fallback="/site-visits" fallback-label="Back to Site Visits" />
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary mb-1">Site Visits</p>
           <div class="flex flex-wrap items-center gap-3">

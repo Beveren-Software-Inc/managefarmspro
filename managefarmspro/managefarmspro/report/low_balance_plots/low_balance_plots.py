@@ -1,6 +1,8 @@
 import frappe
 from frappe import _
-from frappe.utils import flt
+from frappe.utils import flt, now_datetime
+
+from managefarmspro.managefarmspro.utils import save_pdf_and_get_url
 
 
 def execute(filters=None):
@@ -78,3 +80,21 @@ def get_data(threshold):
 		row.maintenance_balance = flt(row.maintenance_balance, 2)
 
 	return result
+
+
+# Client-requested: a PDF snapshot of the on-screen report, for sharing with
+# supervisors. Same threshold logic as execute() above — never reimplemented.
+@frappe.whitelist()
+def download_pdf(threshold=None):
+	if threshold is None:
+		threshold = 500.0
+	else:
+		threshold = round(float(threshold), 2)
+
+	context = {
+		"rows": get_data(threshold),
+		"threshold": threshold,
+		"generated_on": frappe.utils.format_datetime(now_datetime(), "dd-MM-yyyy hh:mm a"),
+	}
+	html = frappe.render_template("managefarmspro/templates/low_balance_plots_report.html", context)
+	return save_pdf_and_get_url(html, "Low-Balance-Plots-Report")

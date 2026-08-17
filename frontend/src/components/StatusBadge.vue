@@ -25,9 +25,9 @@ const styleMap = {
   "Under Development": "bg-info-soft text-info",
   // Farm Project statuses (Active shared with Plot above)
   Completed: "bg-positive-soft text-positive",
-  // Farm Project Task statuses
+  // Farm Project Task ("Milestone") statuses
   Open: "bg-surface-muted text-muted",
-  "In Progress": "bg-info-soft text-info",
+  "In Progress": "bg-warning-soft text-warning",
   Done: "bg-positive-soft text-positive",
   // Estimate statuses — computed display labels (docstatus + linked Farm
   // Project), not stored values. "Draft"/"Cancelled" above are shared with

@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
 import StatusBadge from "@/components/StatusBadge.vue"
+import SiteVisitReportDialog from "@/components/SiteVisitReportDialog.vue"
 import { fetchSiteVisits } from "@/data/site_visits.js"
 import { formatDate } from "@/format.js"
 
@@ -11,6 +12,7 @@ const router = useRouter()
 const loading = ref(true)
 const error = ref(null)
 const visits = ref([])
+const showReportDialog = ref(false)
 
 function isoDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
@@ -77,10 +79,20 @@ watch(month, () => {
         <h1 class="font-display text-2xl font-semibold text-foreground">Visit Calendar</h1>
         <p class="text-sm text-muted mt-1">Booked dates are highlighted — pick a free date to schedule a new visit.</p>
       </div>
-      <button class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover" @click="router.push('/site-visits/new')">
-        <AppIcon name="plus" :size="17" /> New Site Visit
-      </button>
+      <div class="flex items-center gap-2">
+        <button
+          class="inline-flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-surface-muted"
+          @click="showReportDialog = true"
+        >
+          <AppIcon name="download" :size="17" /> Report
+        </button>
+        <button class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover" @click="router.push('/site-visits/new')">
+          <AppIcon name="plus" :size="17" /> New Site Visit
+        </button>
+      </div>
     </div>
+
+    <SiteVisitReportDialog v-if="showReportDialog" @close="showReportDialog = false" />
 
     <div v-if="error" class="text-center py-16 text-negative bg-negative-soft rounded-xl">{{ error }}</div>
     <p v-else-if="loading" class="text-sm text-muted text-center py-16">Loading calendar…</p>

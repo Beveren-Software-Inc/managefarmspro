@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted } from "vue"
 import { useRouter, useRoute } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
+import BackButton from "@/components/BackButton.vue"
 import RecordPicker from "@/components/RecordPicker.vue"
 import { fetchCategoryTemplates, fetchCategoryTemplate, CATEGORY_ICONS, supervisionLabel, TYPE_COLORS } from "@/data/category_templates.js"
 import { fetchCustomers } from "@/data/customers.js"
@@ -307,13 +308,11 @@ async function goNext() {
   <div v-else class="max-w-3xl mx-auto space-y-6">
     <!-- Page header -->
     <div class="flex items-center gap-3">
-      <button
-        class="p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-surface-muted transition-colors"
-        @click="router.push(isEdit ? `/estimates/${route.params.id}` : '/estimates')"
-        aria-label="Go back"
-      >
-        <AppIcon name="arrowLeft" :size="20" />
-      </button>
+      <BackButton
+        variant="icon"
+        :fallback="isEdit ? `/estimates/${route.params.id}` : '/estimates'"
+        fallback-label="Back to Estimates"
+      />
       <div>
         <h2 class="font-display text-2xl font-semibold text-foreground">{{ isEdit ? `Edit Estimate · ${route.params.id}` : "New Estimate" }}</h2>
         <p class="text-sm text-muted mt-0.5">{{ isEdit ? "Update project details for this draft." : "Set up project details, then proceed to the builder." }}</p>

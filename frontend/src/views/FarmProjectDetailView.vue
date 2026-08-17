@@ -2,9 +2,11 @@
 import { ref, computed, onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
+import BackButton from "@/components/BackButton.vue"
 import StatusBadge from "@/components/StatusBadge.vue"
 import TabNav from "@/components/TabNav.vue"
 import ConfirmDialog from "@/components/ConfirmDialog.vue"
+import DonutChart from "@/components/DonutChart.vue"
 import { fetchFarmProjectDetail, farmProjectBalance, updateFarmProjectStatus, saveFarmProjectTasks } from "@/data/farm_projects.js"
 import { fetchPlotDetail } from "@/data/plots.js"
 import { fetchWorks, workStatus } from "@/data/works.js"
@@ -42,7 +44,7 @@ const tab = ref("details")
 const tabs = computed(() => [
   { key: "details", label: "Details" },
   { key: "works", label: `Work Entries (${works.value.length})` },
-  { key: "tasks", label: `Tasks (${tasks.value.length})` },
+  { key: "tasks", label: `Milestones (${tasks.value.length})` },
 ])
 
 const progressPct = computed(() =>
@@ -70,7 +72,7 @@ async function persistTasks() {
     const updated = await saveFarmProjectTasks(project.value.name, tasks.value)
     tasks.value = updated.tasks || []
   } catch (e) {
-    error.value = e.messages?.[0] || e.message || "Failed to save tasks."
+    error.value = e.messages?.[0] || e.message || "Failed to save milestones."
   } finally {
     savingTasks.value = false
   }
@@ -97,6 +99,39 @@ function removeTask(idx) {
 }
 const completedTaskCount = computed(() => tasks.value.filter((t) => t.status === "Done").length)
 const taskProgressPct = computed(() => (tasks.value.length ? Math.round((completedTaskCount.value / tasks.value.length) * 100) : 0))
+
+// Same 3 status colors as the milestone circle/StatusBadge — counts, not currency.
+const milestoneChartData = computed(() => {
+  const counts = { Open: 0, "In Progress": 0, Done: 0 }
+  for (const t of tasks.value) counts[t.status] = (counts[t.status] || 0) + 1
+  return [
+    { label: "Open", value: counts.Open, color: "var(--color-muted)" },
+    { label: "In Progress", value: counts["In Progress"], color: "var(--color-warning)" },
+    { label: "Done", value: counts.Done, color: "var(--color-positive)" },
+  ].filter((s) => s.value > 0)
+})
+
+// Deliberately a fixed 2-color scheme (red spent / dark green remaining),
+// not the 3-tier rule the Actual Cost bar uses — client asked for this donut
+// specifically to read unambiguously at a glance. Over budget adds a
+// distinct "Over Budget" slice for the overage instead of just clipping
+// "Spent" at the estimated total, so the overrun is visible.
+const budgetChartData = computed(() => {
+  if (!project.value) return []
+  const estimated = project.value.estimated_cost || 0
+  const actual = project.value.actual_cost || 0
+  const balance = farmProjectBalance(project.value)
+  if (balance < 0) {
+    return [
+      { label: "Spent (within budget)", value: estimated, color: "var(--color-negative)" },
+      { label: "Over Budget", value: -balance, color: "var(--color-negative)" },
+    ]
+  }
+  return [
+    { label: "Spent", value: actual, color: "var(--color-negative)" },
+    { label: "Remaining", value: balance, color: "var(--color-positive)" },
+  ]
+})
 </script>
 
 <template>
@@ -104,9 +139,7 @@ const taskProgressPct = computed(() => (tasks.value.length ? Math.round((complet
   <div v-else-if="error" class="text-center py-16 text-negative bg-negative-soft rounded-xl">{{ error }}</div>
 
   <div v-else-if="project" class="space-y-6">
-    <button class="flex items-center gap-1.5 text-sm text-muted hover:text-foreground" @click="router.push('/projects')">
-      <AppIcon name="arrowLeft" :size="16" /> Back to Farm Projects
-    </button>
+    <BackButton fallback="/projects" fallback-label="Back to Farm Projects" />
 
     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
       <div>
@@ -158,6 +191,25 @@ const taskProgressPct = computed(() => (tasks.value.length ? Math.round((complet
         <p class="mt-1 text-xs" :class="farmProjectBalance(project) < 0 ? 'text-negative/80' : 'text-positive/80'">
           {{ farmProjectBalance(project) < 0 ? "Over estimated cost" : "Available to complete work" }}
         </p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-surface border border-border rounded-xl p-5">
+        <h3 class="font-medium text-foreground mb-1">Budget Status</h3>
+        <p class="text-xs text-muted mb-4">Estimated vs. actual spend</p>
+        <DonutChart :data="budgetChartData" center-top-label="Estimated" :center-value="formatCurrency(project.estimated_cost)" empty-text="No budget set." />
+      </div>
+      <div class="bg-surface border border-border rounded-xl p-5">
+        <h3 class="font-medium text-foreground mb-1">Milestones Completion</h3>
+        <p class="text-xs text-muted mb-4">{{ completedTaskCount }} of {{ tasks.length }} complete</p>
+        <DonutChart
+          :data="milestoneChartData"
+          format="count"
+          center-top-label="Complete"
+          :center-value="`${taskProgressPct}%`"
+          empty-text="No milestones yet."
+        />
       </div>
     </div>
 
@@ -234,8 +286,8 @@ const taskProgressPct = computed(() => (tasks.value.length ? Math.round((complet
     <div v-else class="bg-surface border border-border rounded-xl p-5 sm:p-6">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h3 class="font-medium text-foreground">Project tasks</h3>
-          <p class="text-xs text-muted mt-1">{{ completedTaskCount }} of {{ tasks.length }} tasks complete · {{ taskProgressPct }}%</p>
+          <h3 class="font-medium text-foreground">Project milestones</h3>
+          <p class="text-xs text-muted mt-1">{{ completedTaskCount }} of {{ tasks.length }} milestones complete · {{ taskProgressPct }}%</p>
         </div>
         <div class="w-full lg:w-72">
           <div class="h-2 rounded-full bg-surface-muted overflow-hidden">
@@ -248,8 +300,15 @@ const taskProgressPct = computed(() => (tasks.value.length ? Math.round((complet
         <div v-for="(task, idx) in tasks" :key="task.name || idx" class="flex items-center gap-3 rounded-lg border border-border px-3 py-3">
           <button
             class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-            :class="task.status === 'Done' ? 'border-positive bg-positive text-positive-foreground' : 'border-border text-transparent hover:border-primary'"
+            :class="
+              task.status === 'Done'
+                ? 'border-positive bg-positive text-positive-foreground'
+                : task.status === 'In Progress'
+                  ? 'border-warning bg-warning text-transparent'
+                  : 'border-border text-transparent hover:border-primary'
+            "
             :disabled="savingTasks"
+            :title="`${task.status} — click to advance`"
             @click="cycleTask(idx)"
           >
             <AppIcon name="check" :size="12" />
@@ -263,11 +322,11 @@ const taskProgressPct = computed(() => (tasks.value.length ? Math.round((complet
             <AppIcon name="trash" :size="15" />
           </button>
         </div>
-        <p v-if="!tasks.length" class="text-sm text-muted text-center py-6">No tasks yet.</p>
+        <p v-if="!tasks.length" class="text-sm text-muted text-center py-6">No milestones yet.</p>
       </div>
 
       <form class="mt-5 flex flex-col sm:flex-row gap-2" @submit.prevent="addTask">
-        <input v-model="taskTitle" placeholder="Add a task…" class="flex-1 px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/25" />
+        <input v-model="taskTitle" placeholder="Add a milestone…" class="flex-1 px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/25" />
         <input v-model="taskDueDate" type="date" class="px-3 py-2 rounded-lg border border-border bg-background text-sm text-muted focus:outline-none focus:ring-2 focus:ring-primary/25" />
         <button type="submit" :disabled="savingTasks" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-hover disabled:opacity-50">
           <AppIcon name="plus" :size="15" /> Add

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
+import BackButton from "@/components/BackButton.vue"
 import StatusBadge from "@/components/StatusBadge.vue"
 import BalancePill from "@/components/BalancePill.vue"
 import TabNav from "@/components/TabNav.vue"
@@ -77,9 +78,7 @@ function onPlotCreated(created) {
           : 'space-y-6'
       "
     >
-      <button class="flex items-center gap-1.5 text-sm text-muted hover:text-foreground" @click="router.push('/owners')">
-        <AppIcon name="arrowLeft" :size="16" /> Back to Customers
-      </button>
+      <BackButton fallback="/owners" fallback-label="Back to Customers" />
 
       <!-- Header -->
       <div class="bg-surface border border-border rounded-xl p-6">

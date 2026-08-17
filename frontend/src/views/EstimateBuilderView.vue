@@ -2,6 +2,7 @@
 import { ref, reactive, computed, onMounted, watch, nextTick } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
+import BackButton from "@/components/BackButton.vue"
 import StatusBadge from "@/components/StatusBadge.vue"
 import ConfirmDialog from "@/components/ConfirmDialog.vue"
 import RecordPicker from "@/components/RecordPicker.vue"
@@ -714,9 +715,7 @@ async function confirmCancel() {
     <!-- Top bar: meta + actions -->
     <div class="flex flex-col lg:flex-row lg:items-start gap-4 mb-5">
       <div class="flex items-start gap-3">
-        <button class="text-muted hover:text-foreground p-1 rounded-lg hover:bg-surface-muted transition-colors mt-0.5" @click="router.push('/estimates')">
-          <AppIcon name="arrowLeft" :size="20" />
-        </button>
+        <BackButton variant="icon" fallback="/estimates" fallback-label="Back to Estimates" class="mt-0.5" />
         <div>
           <div class="flex items-center gap-3 flex-wrap">
             <h2 class="font-display text-2xl font-semibold text-foreground">{{ isLocalMode ? "New Estimate" : doc.name }}</h2>

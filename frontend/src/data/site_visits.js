@@ -138,6 +138,12 @@ export async function downloadSiteVisitInvoicePdf(name) {
   return call(`${SITE_VISIT_MODULE}.download_invoice_pdf`, { site_visit: name })
 }
 
+// Client-requested: PDF of Scheduled Site Visits between two dates, for
+// sharing with supervisors.
+export async function downloadUpcomingSiteVisitsPdf(dateFrom, dateTo) {
+  return call(`${SITE_VISIT_MODULE}.download_upcoming_pdf`, { date_from: dateFrom, date_to: dateTo })
+}
+
 export async function fetchSiteVisitSettings() {
   return call("frappe.client.get", { doctype: "Site Visit Settings", name: "Site Visit Settings" })
 }

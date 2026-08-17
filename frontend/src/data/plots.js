@@ -127,3 +127,12 @@ export async function fetchLowBalancePlots(threshold) {
   return res?.result || []
 }
 
+// Same render_template -> get_pdf -> File pipeline as every other generated
+// document in this app — reuses get_data()'s exact threshold logic, not a
+// reimplementation.
+export async function downloadLowBalancePlotsPdf(threshold) {
+  return call("managefarmspro.managefarmspro.report.low_balance_plots.low_balance_plots.download_pdf", {
+    threshold: threshold ?? 500,
+  })
+}
+

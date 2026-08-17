@@ -2,12 +2,13 @@
 import { ref, reactive, computed, watch, onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import AppIcon from "@/components/AppIcon.vue"
+import BackButton from "@/components/BackButton.vue"
 import FilterCombobox from "@/components/FilterCombobox.vue"
 import RecordPicker from "@/components/RecordPicker.vue"
 import BalancePill from "@/components/BalancePill.vue"
 import ConfirmDialog from "@/components/ConfirmDialog.vue"
 import { fetchPlots, plotBalance } from "@/data/plots.js"
-import { fetchFarmProjectsForPlot } from "@/data/farm_projects.js"
+import { fetchFarmProjectsForPlot, farmProjectBalance } from "@/data/farm_projects.js"
 import { fetchWorkItems, fetchItemOptions, createWork, createWorkDraft } from "@/data/work_entry.js"
 import { useLineItemSections } from "@/composables/useLineItemSections.js"
 import { formatCurrency } from "@/format.js"
@@ -50,17 +51,22 @@ const plotOptions = computed(() => plots.value.map((p) => p.plot_name))
 // maintenance budget with no project involved. When exactly one Active Farm
 // Project exists for the selected plot we default to it (still editable/
 // clearable); with zero or multiple matches we leave it for the user to pick.
-const farmProjectOptions = ref([])
+const farmProjects = ref([]) // full rows (incl. estimated_cost/cost_balance) — Budget Context needs more than just {value,label}
+const farmProjectOptions = computed(() =>
+  farmProjects.value.map((r) => ({ value: r.name, label: `${r.name} · ${r.category || "Farm Project"} (${r.status})` })),
+)
+const selectedFarmProject = computed(() => farmProjects.value.find((p) => p.name === form.farm_project))
+
 watch(
   () => form.plot,
   async (plotName) => {
     if (!plotName) {
-      farmProjectOptions.value = []
+      farmProjects.value = []
       form.farm_project = ""
       return
     }
     const rows = await fetchFarmProjectsForPlot(plotName)
-    farmProjectOptions.value = rows.map((r) => ({ value: r.name, label: `${r.name} · ${r.category || "Farm Project"} (${r.status})` }))
+    farmProjects.value = rows
     if (!rows.some((r) => r.name === form.farm_project)) {
       const activeMatches = rows.filter((r) => r.status === "Active")
       form.farm_project = activeMatches.length === 1 ? activeMatches[0].name : ""
@@ -77,14 +83,26 @@ const { sections, selectedItemFor, addItem, removeItem, sectionTotal } = useLine
 
 const totalCost = computed(() => sectionTotal("labor") + sectionTotal("equipment") + sectionTotal("material"))
 
-const projectedBalance = computed(() =>
-  selectedPlot.value ? plotBalance(selectedPlot.value) - totalCost.value : 0,
+// Budget Context switches to the Farm Project's own figures once one's
+// selected — a plot's monthly maintenance budget is the wrong number to show
+// against project work, which draws down the project's total estimated cost
+// instead (see Farm Project.actual_cost / Work.update_farm_project_totals).
+const projectedBalance = computed(() => {
+  if (selectedFarmProject.value) return farmProjectBalance(selectedFarmProject.value) - totalCost.value
+  if (selectedPlot.value) return plotBalance(selectedPlot.value) - totalCost.value
+  return 0
+})
+
+const budgetConfirmMessage = computed(() =>
+  selectedFarmProject.value
+    ? "This work amount exceeds the Farm Project's remaining balance. Do you still want to save this work?"
+    : "This work amount exceeds the plot's maintenance balance. Do you still want to save this work?",
 )
 
 const submitting = ref(false)
 const savingDraft = ref(false)
 const submitError = ref(null)
-const showBudgetConfirm = ref(false)
+const showSubmitConfirm = ref(false)
 
 function workPayload() {
   return {
@@ -100,25 +118,38 @@ function workPayload() {
   }
 }
 
+// Follows the same context switch as the Budget Context card itself: Work
+// tied to a Farm Project draws against that project's own balance and has no
+// relation to the plot's monthly maintenance budget at all — checking the
+// plot instead would warn (or fail to warn) against the wrong number entirely.
+const isOverBudget = computed(() => {
+  if (selectedFarmProject.value) return totalCost.value > farmProjectBalance(selectedFarmProject.value)
+  if (selectedPlot.value?.monthly_maintenance_budget > 0) return totalCost.value > plotBalance(selectedPlot.value)
+  return false
+})
+
+// Submit always confirms first now — same "Submit this work?" checkpoint
+// Work Detail's own Draft-editing already uses, rather than only appearing
+// when over budget. The dialog itself offers "Save as Draft instead" so a
+// user who clicked Submit but changes their mind isn't forced to go back and
+// hunt for the separate Save Draft button.
+const submitConfirmTitle = computed(() => (isOverBudget.value ? "Exceeds maintenance balance" : "Submit this work?"))
+const submitConfirmMessage = computed(() =>
+  isOverBudget.value
+    ? budgetConfirmMessage.value
+    : "This saves your work and submits it. Submitted work is locked from further edits and counts toward the plot's spending.",
+)
+
 function submit() {
   submitError.value = null
-
-  if (
-    selectedPlot.value?.monthly_maintenance_budget > 0 &&
-    totalCost.value > plotBalance(selectedPlot.value)
-  ) {
-    showBudgetConfirm.value = true
-    return
-  }
-
-  doSubmit()
+  showSubmitConfirm.value = true
 }
 
 // Saving as Draft never affects a plot's budget rollup (update_plot_totals
 // only runs on Work submit/cancel — work.py), so there's nothing to warn
-// about here even when the running total exceeds the plot's balance. The
-// warning only matters at Submit time.
+// about here even when the running total exceeds the plot's balance.
 async function saveDraft() {
+  showSubmitConfirm.value = false
   submitError.value = null
   savingDraft.value = true
   try {
@@ -132,7 +163,7 @@ async function saveDraft() {
 }
 
 async function doSubmit() {
-  showBudgetConfirm.value = false
+  showSubmitConfirm.value = false
   submitting.value = true
   try {
     const work = await createWork(workPayload())
@@ -147,9 +178,7 @@ async function doSubmit() {
 
 <template>
   <div class="max-w-5xl mx-auto space-y-6">
-    <button class="flex items-center gap-1.5 text-sm text-muted hover:text-foreground" @click="router.push('/works')">
-      <AppIcon name="arrowLeft" :size="16" /> Back to Works
-    </button>
+    <BackButton fallback="/works" fallback-label="Back to Works" />
 
     <div>
       <h2 class="font-display text-2xl font-semibold text-foreground">Log New Work</h2>
@@ -257,7 +286,24 @@ async function doSubmit() {
       <div class="space-y-4">
         <div class="bg-surface border border-border rounded-xl p-5 lg:sticky lg:top-24">
           <h3 class="font-medium text-foreground mb-3">Budget Context</h3>
-          <div v-if="selectedPlot" class="space-y-3 text-sm">
+
+          <!-- Farm Project selected: draws against the project's own estimated cost, not the plot's monthly maintenance budget. -->
+          <div v-if="selectedFarmProject" class="space-y-3 text-sm">
+            <div>
+              <p class="text-muted text-xs">Farm Project</p>
+              <p class="text-foreground font-medium">{{ selectedFarmProject.name }}</p>
+              <p class="text-muted text-xs">{{ selectedFarmProject.category || "—" }} · {{ selectedFarmProject.status }}</p>
+            </div>
+            <dl class="divide-y divide-border">
+              <div class="flex justify-between py-2"><dt class="text-muted">Total Budget</dt><dd class="text-foreground tabular-nums">{{ formatCurrency(selectedFarmProject.estimated_cost) }}</dd></div>
+              <div class="flex justify-between py-2 items-center"><dt class="text-muted">Current Balance</dt><dd><BalancePill :balance="farmProjectBalance(selectedFarmProject)" :budget="selectedFarmProject.estimated_cost" size="sm" /></dd></div>
+              <div class="flex justify-between py-2"><dt class="text-muted">This Work</dt><dd class="text-foreground tabular-nums">{{ formatCurrency(totalCost) }}</dd></div>
+              <div class="flex justify-between py-2 items-center"><dt class="text-muted font-medium">Balance After</dt><dd><BalancePill :balance="projectedBalance" :budget="selectedFarmProject.estimated_cost" size="sm" /></dd></div>
+            </dl>
+          </div>
+
+          <!-- No Farm Project — plain maintenance work against the plot's monthly budget. -->
+          <div v-else-if="selectedPlot" class="space-y-3 text-sm">
             <div>
               <p class="text-muted text-xs">Plot</p>
               <p class="text-foreground font-medium">{{ selectedPlot.plot_name }}</p>
@@ -301,12 +347,17 @@ async function doSubmit() {
     </div>
 
     <ConfirmDialog
-      v-if="showBudgetConfirm"
-      title="Exceeds maintenance balance"
-      message="This work amount exceeds the plot's maintenance balance. Do you still want to save this work?"
-      confirm-label="Save anyway"
+      v-if="showSubmitConfirm"
+      :title="submitConfirmTitle"
+      :message="submitConfirmMessage"
+      :confirm-label="isOverBudget ? 'Save anyway' : 'Submit'"
+      cancel-label="Go Back"
       @confirm="doSubmit"
-      @cancel="showBudgetConfirm = false"
-    />
+      @cancel="showSubmitConfirm = false"
+    >
+      <button type="button" :disabled="savingDraft" class="text-sm font-medium text-primary hover:underline disabled:opacity-50" @click="saveDraft">
+        {{ savingDraft ? "Saving…" : "Save as Draft instead" }}
+      </button>
+    </ConfirmDialog>
   </div>
 </template>
