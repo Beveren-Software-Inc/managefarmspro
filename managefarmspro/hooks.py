@@ -67,7 +67,10 @@ fixtures = [
 	{
 		"doctype": "Item Group",
 		"filters": [["name", "in", ["Plants", "Manure & Inputs", "Irrigation Materials", "Structure Materials"]]],
-	}
+	},
+	{"doctype": "Plant Type"},
+	{"doctype": "Plant"},
+	{"doctype": "Project Category"},
 ]
 
 

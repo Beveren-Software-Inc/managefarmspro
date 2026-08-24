@@ -1,0 +1,66 @@
+[
+ {
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Plant Type",
+  "modified": "2026-08-10 06:36:06.241421",
+  "name": "Small Tree",
+  "plant_type_name": "Small Tree"
+ },
+ {
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Plant Type",
+  "modified": "2026-08-10 06:36:06.243555",
+  "name": "Butterfly Zone",
+  "plant_type_name": "Butterfly Zone"
+ },
+ {
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Plant Type",
+  "modified": "2026-08-10 06:36:06.244208",
+  "name": "Mulch Plant",
+  "plant_type_name": "Mulch Plant"
+ },
+ {
+  "description": "Catch-all for real catalog species without curated spacing data — default 2ft spacing, correct individually as real data comes in.",
+  "docstatus": 0,
+  "doctype": "Plant Type",
+  "modified": "2026-08-12 17:16:07.403278",
+  "name": "Other",
+  "plant_type_name": "Other"
+ },
+ {
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Plant Type",
+  "modified": "2026-08-10 06:36:06.242278",
+  "name": "Tubers",
+  "plant_type_name": "Tubers"
+ },
+ {
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Plant Type",
+  "modified": "2026-08-10 06:36:06.165836",
+  "name": "Big Canopy Tree",
+  "plant_type_name": "Big Canopy Tree"
+ },
+ {
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Plant Type",
+  "modified": "2026-08-10 06:36:06.240600",
+  "name": "Medium Tree",
+  "plant_type_name": "Medium Tree"
+ },
+ {
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Plant Type",
+  "modified": "2026-08-10 06:36:06.242893",
+  "name": "Beautifier",
+  "plant_type_name": "Beautifier"
+ }
+]
