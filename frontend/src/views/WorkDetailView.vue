@@ -345,7 +345,7 @@ async function doCancel() {
           <h4 class="font-medium text-foreground mb-3">Farm Project Context</h4>
           <dl class="text-sm divide-y divide-border">
             <div class="flex justify-between py-2.5"><dt class="text-muted">Project</dt><dd class="text-foreground">{{ farmProject.name }}</dd></div>
-            <div class="flex justify-between py-2.5"><dt class="text-muted">Customer</dt><dd class="text-foreground text-right">{{ farmProject.customer }}</dd></div>
+            <div class="flex justify-between py-2.5"><dt class="text-muted">Client</dt><dd class="text-foreground text-right">{{ farmProject.customer }}</dd></div>
             <div class="flex justify-between py-2.5"><dt class="text-muted">Total Budget</dt><dd class="text-foreground tabular-nums">{{ formatCurrency(farmProject.estimated_cost) }}</dd></div>
             <div class="flex justify-between py-2.5 items-center"><dt class="text-muted">Current Balance</dt><dd><BalancePill :balance="farmProjectBalance(farmProject)" :budget="farmProject.estimated_cost" size="sm" /></dd></div>
           </dl>
@@ -354,7 +354,7 @@ async function doCancel() {
           <h4 class="font-medium text-foreground mb-3">Plot Context</h4>
           <dl class="text-sm divide-y divide-border">
             <div class="flex justify-between py-2.5"><dt class="text-muted">Plot</dt><dd class="text-foreground">{{ plot.plot_name }}</dd></div>
-            <div class="flex justify-between py-2.5"><dt class="text-muted">Customer</dt><dd class="text-foreground text-right">{{ plot.customer_name }}</dd></div>
+            <div class="flex justify-between py-2.5"><dt class="text-muted">Client</dt><dd class="text-foreground text-right">{{ plot.customer_name }}</dd></div>
             <div class="flex justify-between py-2.5"><dt class="text-muted">Monthly Budget</dt><dd class="text-foreground tabular-nums">{{ formatCurrency(plot.monthly_maintenance_budget) }}</dd></div>
             <div class="flex justify-between py-2.5 items-center"><dt class="text-muted">Maintenance Balance</dt><dd><BalancePill :balance="plotBalance(plot)" :budget="plot.monthly_maintenance_budget" size="sm" /></dd></div>
           </dl>

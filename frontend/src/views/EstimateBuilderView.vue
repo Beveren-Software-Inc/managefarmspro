@@ -604,7 +604,7 @@ async function submitLinkRequired() {
       linkError.value = "Pick an existing plot, or fill in the new plot's name and cluster."
     }
   } catch (e) {
-    linkError.value = e.messages?.[0] || e.message || "Failed to link customer/plot."
+    linkError.value = e.messages?.[0] || e.message || "Failed to link client/plot."
   } finally {
     linking.value = false
   }
@@ -1167,7 +1167,7 @@ async function confirmCancel() {
             <AppIcon name="file" :size="15" /> View Documents
           </router-link>
           <router-link v-if="needsLinking" to="#" @click.prevent="openLinkRequired" class="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
-            <AppIcon name="users" :size="15" /> {{ !doc.customer ? "Link Customer & Plot" : "Link Plot" }}
+            <AppIcon name="users" :size="15" /> {{ !doc.customer ? "Link Client & Plot" : "Link Plot" }}
           </router-link>
           <router-link v-if="canAmend" to="#" @click.prevent="showConfirmAmend = true" class="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
             <AppIcon name="copy" :size="15" /> Revise
@@ -1205,7 +1205,7 @@ async function confirmCancel() {
       <div v-if="pendingAction === 'approve' && !doc.customer" class="space-y-2.5 pt-1">
         <label class="flex items-center gap-2 text-sm text-foreground cursor-pointer">
           <input type="checkbox" v-model="linkOnApprove" class="rounded border-border" />
-          Link a customer now
+          Link a client now
         </label>
         <div v-if="linkOnApprove" class="space-y-2 pl-6">
           <div class="flex gap-1 p-1 bg-surface-muted rounded-lg w-fit">
@@ -1226,12 +1226,12 @@ async function confirmCancel() {
               New
             </button>
           </div>
-          <RecordPicker v-if="approveCustomerMode === 'existing'" v-model="approveCustomerId" :options="customerOptionsForLink" placeholder="Select customer" />
+          <RecordPicker v-if="approveCustomerMode === 'existing'" v-model="approveCustomerId" :options="customerOptionsForLink" placeholder="Select client" />
           <template v-else>
             <input
               v-model="approveNewCustomerName"
               type="text"
-              placeholder="Customer name"
+              placeholder="Client name"
               class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
             <select v-model="approveCustomerType" class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
@@ -1269,12 +1269,12 @@ async function confirmCancel() {
             <span class="flex items-center justify-center w-9 h-9 rounded-lg bg-warning-soft text-warning shrink-0">
               <AppIcon name="alert" :size="18" />
             </span>
-            <h3 class="font-display text-lg font-semibold text-foreground">Link Customer & Plot</h3>
+            <h3 class="font-display text-lg font-semibold text-foreground">Link Client & Plot</h3>
           </div>
-          <p class="text-sm text-muted leading-relaxed">Converting {{ doc?.name }} to a Project needs a linked Customer and Plot.</p>
+          <p class="text-sm text-muted leading-relaxed">Converting {{ doc?.name }} to a Project needs a linked Client and Plot.</p>
 
           <div v-if="!doc.customer" class="space-y-2">
-            <p class="text-xs font-semibold text-muted uppercase tracking-wide">Customer</p>
+            <p class="text-xs font-semibold text-muted uppercase tracking-wide">Client</p>
             <div class="flex gap-1 p-1 bg-surface-muted rounded-lg w-fit">
               <button
                 type="button"
@@ -1293,12 +1293,12 @@ async function confirmCancel() {
                 New
               </button>
             </div>
-            <RecordPicker v-if="convertCustomerMode === 'existing'" v-model="convertCustomerId" :options="customerOptionsForLink" placeholder="Select customer" />
+            <RecordPicker v-if="convertCustomerMode === 'existing'" v-model="convertCustomerId" :options="customerOptionsForLink" placeholder="Select client" />
             <template v-else>
               <input
                 v-model="convertNewCustomerName"
                 type="text"
-                placeholder="Customer name"
+                placeholder="Client name"
                 class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
               <select v-model="convertCustomerType" class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">

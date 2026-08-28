@@ -467,7 +467,7 @@ async function goNext() {
             class="px-4 py-1.5 rounded-md text-sm font-medium transition-all"
             :class="clientMode === 'customer' ? 'bg-surface text-foreground shadow-sm' : 'text-muted hover:text-foreground'"
           >
-            <span class="flex items-center gap-1.5"><AppIcon name="users" :size="14" /> Existing Customer</span>
+            <span class="flex items-center gap-1.5"><AppIcon name="users" :size="14" /> Existing Client</span>
           </button>
           <button
             @click="clientMode = 'prospect'"
@@ -480,8 +480,8 @@ async function goNext() {
 
         <div v-if="clientMode === 'customer'" class="space-y-4">
           <label class="block">
-            <span class="text-sm text-muted mb-1.5 block">Customer <span class="text-negative">*</span></span>
-            <RecordPicker v-model="customerId" :options="customerOptions" placeholder="Select customer" />
+            <span class="text-sm text-muted mb-1.5 block">Client <span class="text-negative">*</span></span>
+            <RecordPicker v-model="customerId" :options="customerOptions" placeholder="Select client" />
           </label>
 
           <div v-if="selectedCustomer" class="flex items-center gap-3 p-3.5 rounded-xl bg-primary-soft border border-primary/15">
@@ -501,8 +501,8 @@ async function goNext() {
 
           <label class="block">
             <span class="text-sm text-muted mb-1.5 block">Linked Plot <span class="text-muted text-xs">(optional)</span></span>
-            <RecordPicker v-model="plotId" :options="plotOptions" :placeholder="customerId ? 'No plot linked' : 'Select a customer first'" />
-            <p v-if="!customerId" class="text-xs text-muted mt-1">Select a customer first to see their plots.</p>
+            <RecordPicker v-model="plotId" :options="plotOptions" :placeholder="customerId ? 'No plot linked' : 'Select a client first'" />
+            <p v-if="!customerId" class="text-xs text-muted mt-1">Select a client first to see their plots.</p>
           </label>
         </div>
 
@@ -520,7 +520,7 @@ async function goNext() {
 
           <div class="flex items-start gap-2.5 p-3.5 rounded-xl bg-info-soft border border-info/15 text-xs text-info leading-relaxed">
             <AppIcon name="info" :size="14" class="flex-shrink-0 mt-0.5" />
-            <span>Nothing is created automatically. You can link or create a Customer when you approve this estimate, or any time after — it's required before converting to a Project.</span>
+            <span>Nothing is created automatically. You can link or create a Client when you approve this estimate, or any time after — it's required before converting to a Project.</span>
           </div>
         </div>
       </div>

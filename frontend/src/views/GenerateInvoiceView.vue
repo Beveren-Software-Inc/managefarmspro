@@ -121,7 +121,7 @@ function closePreview() {
         </label>
       </div>
       <div v-if="selectedPlot" class="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-border text-sm">
-        <span class="text-muted">Customer: <span class="text-foreground font-medium">{{ selectedPlot.customer_name }}</span></span>
+        <span class="text-muted">Client: <span class="text-foreground font-medium">{{ selectedPlot.customer_name }}</span></span>
         <span class="text-muted">·</span>
         <span class="text-muted">{{ works.length }} works matched</span>
         <span class="text-muted">·</span>
@@ -209,7 +209,7 @@ function closePreview() {
           </div>
 
           <div class="grid grid-cols-2 gap-4 text-sm rounded-lg bg-surface-muted/50 p-4">
-            <div><p class="text-muted text-xs">Customer</p><p class="text-foreground font-medium">{{ selectedPlot?.customer_name }}</p></div>
+            <div><p class="text-muted text-xs">Client</p><p class="text-foreground font-medium">{{ selectedPlot?.customer_name }}</p></div>
             <div><p class="text-muted text-xs">Plot</p><p class="text-foreground font-medium">{{ selectedPlot?.plot_name }} · {{ selectedPlot?.cluster }}</p></div>
           </div>
 

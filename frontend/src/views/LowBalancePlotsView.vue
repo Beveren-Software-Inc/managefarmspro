@@ -86,7 +86,7 @@ async function downloadPdf() {
         <thead>
           <tr class="text-left text-muted border-b border-border bg-surface-muted/50">
             <th class="font-medium px-5 py-3">Plot Name</th>
-            <th class="font-medium px-5 py-3">Customer</th>
+            <th class="font-medium px-5 py-3">Client</th>
             <th class="font-medium px-5 py-3">Cluster</th>
             <th class="font-medium px-5 py-3">Status</th>
             <th class="font-medium px-5 py-3 text-right">Monthly Budget</th>

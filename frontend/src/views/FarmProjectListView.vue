@@ -117,7 +117,7 @@ function progressPct(project) {
 
       <template v-else>
         <div class="hidden lg:grid grid-cols-[1.1fr_1.1fr_0.8fr_1.15fr_0.8fr_32px] gap-4 px-5 py-3 bg-surface-muted text-[10px] uppercase tracking-wider font-semibold text-muted">
-          <span>Project</span><span>Customer / Plot</span><span>Status</span><span>Budget usage</span><span>Balance</span><span />
+          <span>Project</span><span>Client / Plot</span><span>Status</span><span>Budget usage</span><span>Balance</span><span />
         </div>
         <div v-if="filtered.length" class="divide-y divide-border">
           <router-link

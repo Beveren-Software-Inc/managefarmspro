@@ -35,7 +35,7 @@ onMounted(async () => {
     ])
     pdfUrls.value = await fetchInvoicePdfUrls(invoices.value.map((i) => i.name))
   } catch (e) {
-    error.value = e.messages?.[0] || e.message || "Failed to load this customer."
+    error.value = e.messages?.[0] || e.message || "Failed to load this client."
   } finally {
     loading.value = false
   }
@@ -78,7 +78,7 @@ function onPlotCreated(created) {
           : 'space-y-6'
       "
     >
-      <BackButton fallback="/owners" fallback-label="Back to Customers" />
+      <BackButton fallback="/owners" fallback-label="Back to Clients" />
 
       <!-- Header -->
       <div class="bg-surface border border-border rounded-xl p-6">
@@ -91,7 +91,7 @@ function onPlotCreated(created) {
               <h2 class="font-display text-2xl font-semibold text-foreground">{{ customer.customer_name }}</h2>
               <StatusBadge :status="customer.disabled ? 'Inactive' : 'Active'" />
             </div>
-            <p class="text-sm text-muted mt-1">{{ customer.customer_type }} · {{ customer.name }} · Customer since {{ formatDate(customer.creation) }}</p>
+            <p class="text-sm text-muted mt-1">{{ customer.customer_type }} · {{ customer.name }} · Client since {{ formatDate(customer.creation) }}</p>
           </div>
           <div class="sm:ml-auto grid grid-cols-2 gap-4 sm:text-right">
             <div>
@@ -125,8 +125,8 @@ function onPlotCreated(created) {
       <div class="bg-surface border border-border rounded-xl p-5 space-y-3">
         <h3 class="font-medium text-foreground">Account</h3>
         <dl class="text-sm divide-y divide-border">
-          <div class="flex justify-between py-2"><dt class="text-muted">Customer Type</dt><dd class="text-foreground">{{ customer.customer_type }}</dd></div>
-          <div class="flex justify-between py-2"><dt class="text-muted">Customer Since</dt><dd class="text-foreground">{{ formatDate(customer.creation) }}</dd></div>
+          <div class="flex justify-between py-2"><dt class="text-muted">Client Type</dt><dd class="text-foreground">{{ customer.customer_type }}</dd></div>
+          <div class="flex justify-between py-2"><dt class="text-muted">Client Since</dt><dd class="text-foreground">{{ formatDate(customer.creation) }}</dd></div>
           <div class="flex justify-between py-2"><dt class="text-muted">Linked Plots</dt><dd class="text-foreground">{{ plots.length }}</dd></div>
           <div class="flex justify-between py-2 items-center"><dt class="text-muted">Status</dt><dd><StatusBadge :status="customer.disabled ? 'Inactive' : 'Active'" /></dd></div>
         </dl>
@@ -245,5 +245,5 @@ function onPlotCreated(created) {
     />
   </div>
 
-  <div v-else class="text-center py-20 text-muted">Customer not found.</div>
+  <div v-else class="text-center py-20 text-muted">Client not found.</div>
 </template>

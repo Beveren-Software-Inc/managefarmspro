@@ -2,7 +2,7 @@
 import { useRoute } from "vue-router"
 import { computed } from "vue"
 import AppIcon from "@/components/AppIcon.vue"
-import CompanyLogo from "@/components/CompanyLogo.vue"
+import UserMenu from "@/components/UserMenu.vue"
 
 defineEmits(["toggle-menu"])
 const route = useRoute()
@@ -23,21 +23,8 @@ const title = computed(() => route.meta.title || "ManageFarmsPro")
 
     <h1 class="font-display text-xl font-semibold text-foreground truncate min-w-0">{{ title }}</h1>
 
-    <div class="ml-auto hidden sm:block w-px h-6 bg-border" />
-
-    <div class="ml-auto sm:ml-0 flex items-center gap-2">
-      <CompanyLogo :size="22" class="shrink-0" />
-      <span class="hidden sm:inline text-sm font-medium text-muted whitespace-nowrap">Philosan Farm Management</span>
-    </div>
-
-    <div class="flex items-center gap-2 sm:gap-3">
-      <button
-        class="relative p-2 rounded-lg bg-surface border border-border hover:bg-surface-muted text-foreground"
-        aria-label="Notifications"
-      >
-        <AppIcon name="bell" :size="19" />
-        <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent" />
-      </button>
+    <div class="ml-auto flex items-center">
+      <UserMenu />
     </div>
   </header>
 </template>

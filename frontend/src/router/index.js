@@ -32,8 +32,8 @@ function stub(label, title) {
 
 const routes = [
   { path: "/", name: "dashboard", component: DashboardView, meta: { title: "Dashboard" } },
-  { path: "/owners", name: "owners", component: CustomerListView, meta: { title: "Customers" } },
-  { path: "/owners/:id", name: "owner-detail", component: CustomerDetailView, meta: { title: "Customer" } },
+  { path: "/owners", name: "owners", component: CustomerListView, meta: { title: "Clients" } },
+  { path: "/owners/:id", name: "owner-detail", component: CustomerDetailView, meta: { title: "Client" } },
   { path: "/plots", name: "plots", component: PlotListView, meta: { title: "Plots" } },
   { path: "/plots/:id", name: "plot-detail", component: PlotDetailView, meta: { title: "Plot" } },
   { path: "/works", name: "works", component: WorkListView, meta: { title: "Works" } },

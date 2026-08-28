@@ -1,6 +1,6 @@
 <script setup>
 import AppIcon from "@/components/AppIcon.vue"
-import { session, initials, isSystemManager } from "@/session.js"
+import { isSystemManager } from "@/session.js"
 
 defineProps({ mobileOpen: Boolean })
 defineEmits(["close"])
@@ -15,7 +15,7 @@ const navGroups = [
   {
     label: "Clients",
     items: [
-      { to: "/owners", label: "Customers", icon: "users" },
+      { to: "/owners", label: "Clients", icon: "users" },
       { to: "/plots", label: "Plots", icon: "plot" },
     ],
   },
@@ -58,17 +58,17 @@ const navGroups = [
       </div>
       <div class="leading-tight">
         <p class="font-display text-[19px] font-semibold tracking-tight">ManageFarms<span class="text-accent">Pro</span></p>
-        <p class="text-[11px] text-primary-foreground/55">Farm & Plot Operations</p>
+        <p class="text-[11px] text-primary-foreground/55 truncate">Philosan Farm Management</p>
       </div>
     </div>
 
-    <nav class="flex-1 px-3 py-1.5 overflow-y-auto">
+    <nav class="flex-1 px-3 pt-3 pb-1 overflow-y-auto">
       <!-- Dashboard - standalone, above the grouped sections -->
       <router-link :to="dashboardItem.to" custom v-slot="{ href, navigate, isExactActive }">
         <a
           :href="href"
           @click="(e) => { navigate(e); $emit('close') }"
-          class="flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm font-semibold transition-colors"
+          class="flex items-center gap-3 px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-colors"
           :class="
             isExactActive
               ? 'bg-primary-foreground/15 text-primary-foreground shadow-sm'
@@ -81,7 +81,7 @@ const navGroups = [
       </router-link>
 
       <div v-for="group in navGroups" :key="group.label">
-        <div class="pt-3.5 pb-1 px-3">
+        <div class="pt-2.5 pb-1 px-3">
           <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-accent/90">{{ group.label }}</p>
         </div>
         <router-link
@@ -94,7 +94,7 @@ const navGroups = [
           <a
             :href="href"
             @click="(e) => { navigate(e); $emit('close') }"
-            class="flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm font-semibold transition-colors"
+            class="flex items-center gap-3 px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-colors"
             :class="
               isActive
                 ? 'bg-primary-foreground/15 text-primary-foreground shadow-sm'
@@ -107,27 +107,5 @@ const navGroups = [
         </router-link>
       </div>
     </nav>
-
-    <div class="px-3 pb-2 shrink-0">
-      <router-link
-        to="/works/new"
-        @click="$emit('close')"
-        class="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-bold hover:brightness-95 transition-all shadow-sm"
-      >
-        <AppIcon name="plus" :size="18" />
-        Log New Work
-      </router-link>
-    </div>
-
-    <div class="mx-3 mb-2.5 px-3 py-2.5 rounded-xl bg-primary-foreground/10 flex items-center gap-3 shrink-0">
-      <div class="w-9 h-9 rounded-xl bg-primary-foreground/10 text-accent flex items-center justify-center text-sm font-bold ring-1 ring-primary-foreground/10">
-        {{ initials(session.fullName) }}
-      </div>
-      <div class="text-xs leading-tight min-w-0">
-        <p class="font-semibold truncate">{{ session.fullName }}</p>
-        <p class="text-primary-foreground/55 truncate">{{ session.user }}</p>
-      </div>
-      <AppIcon name="chevronDown" :size="16" class="ml-auto text-primary-foreground/45" />
-    </div>
   </aside>
 </template>

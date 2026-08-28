@@ -219,7 +219,7 @@ const budgetChartData = computed(() => {
       <div class="bg-surface border border-border rounded-xl p-5">
         <h3 class="font-medium text-foreground mb-3">Project Details</h3>
         <dl class="text-sm divide-y divide-border">
-          <div class="flex justify-between py-2.5"><dt class="text-muted">Customer</dt><dd class="text-foreground">{{ project.customer }}</dd></div>
+          <div class="flex justify-between py-2.5"><dt class="text-muted">Client</dt><dd class="text-foreground">{{ project.customer }}</dd></div>
           <div class="flex justify-between py-2.5"><dt class="text-muted">Plot</dt><dd class="text-foreground text-right">{{ plot?.plot_name || project.plot || "—" }}</dd></div>
           <div class="flex justify-between py-2.5"><dt class="text-muted">Category</dt><dd class="text-foreground">{{ project.category || "—" }}</dd></div>
           <div class="flex justify-between py-2.5 items-center"><dt class="text-muted">Status</dt><dd><StatusBadge :status="project.status" /></dd></div>
@@ -229,7 +229,7 @@ const budgetChartData = computed(() => {
         <h3 class="font-medium text-foreground mb-3">Linked Records</h3>
         <div class="space-y-3">
           <router-link :to="`/owners/${project.customer}`" class="flex items-center justify-between gap-3 p-3 rounded-lg bg-surface-muted hover:bg-primary-soft transition-colors">
-            <span class="flex items-center gap-2"><AppIcon name="users" :size="17" class="text-primary" /><span class="text-sm font-medium text-foreground">Customer profile</span></span>
+            <span class="flex items-center gap-2"><AppIcon name="users" :size="17" class="text-primary" /><span class="text-sm font-medium text-foreground">Client profile</span></span>
             <AppIcon name="chevronRight" :size="15" class="text-muted" />
           </router-link>
           <router-link v-if="plot" :to="`/plots/${plot.name}`" class="flex items-center justify-between gap-3 p-3 rounded-lg bg-surface-muted hover:bg-primary-soft transition-colors">

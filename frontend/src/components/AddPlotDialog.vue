@@ -92,8 +92,8 @@ async function submit() {
           <p class="text-sm font-semibold text-foreground mb-3">Plot Details</p>
           <div class="grid sm:grid-cols-3 gap-3">
             <label class="block">
-              <span class="text-xs text-muted mb-1 block">Customer *</span>
-              <RecordPicker v-if="!presetCustomer" v-model="newPlot.customer_name" :options="customerOptionsForAdd" placeholder="Select customer" />
+              <span class="text-xs text-muted mb-1 block">Client *</span>
+              <RecordPicker v-if="!presetCustomer" v-model="newPlot.customer_name" :options="customerOptionsForAdd" placeholder="Select client" />
               <p v-else class="w-full px-3 py-2 rounded-lg bg-surface-muted border border-border text-sm text-foreground">{{ presetCustomerLabel }}</p>
             </label>
             <label class="block">
@@ -105,7 +105,7 @@ async function submit() {
               <input
                 v-model="newPlot.plot_name"
                 type="text"
-                placeholder="Auto-filled from Customer + Plot Number"
+                placeholder="Auto-filled from Client + Plot Number"
                 class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
                 @input="newPlot.plot_name_touched = true"
               />

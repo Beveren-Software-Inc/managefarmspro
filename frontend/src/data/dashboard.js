@@ -30,6 +30,7 @@ export async function fetchDashboardData() {
   const [
     plotCount,
     workCount,
+    customerCount,
     invoiceStatusChart,
     lowBalance,
     estimateActiveCount,
@@ -41,6 +42,7 @@ export async function fetchDashboardData() {
   ] = await Promise.all([
     call("frappe.client.get_count", { doctype: "Plot" }),
     call("frappe.client.get_count", { doctype: "Work", filters: [["Work", "docstatus", "=", 1]] }),
+    call("frappe.client.get_count", { doctype: "Customer" }),
     call("frappe.desk.doctype.dashboard_chart.dashboard_chart.get", { chart_name: "Invoice Status" }),
     call("frappe.desk.query_report.run", { report_name: "Low Balance Plots", filters: {} }),
     call("frappe.client.get_count", { doctype: "Estimate", filters: [["docstatus", "in", [0, 1]]] }),
@@ -91,7 +93,7 @@ export async function fetchDashboardData() {
   return {
     plotCount,
     workCount,
-    invoicedTotal: invoiceStatus.reduce((t, s) => t + s.value, 0),
+    customerCount,
     invoiceStatus,
     // Dashboard card only — full list is one click away via "View all"
     // (/low-balance-plots), no need to show every row here.

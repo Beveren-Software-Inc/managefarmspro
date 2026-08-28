@@ -193,7 +193,7 @@ async function submit() {
 
           <div class="flex gap-1 p-1 bg-surface-muted rounded-lg w-fit mb-5">
             <button type="button" @click="clientMode = 'customer'" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all" :class="clientMode === 'customer' ? 'bg-surface text-foreground shadow-sm' : 'text-muted hover:text-foreground'">
-              <span class="flex items-center gap-1.5"><AppIcon name="users" :size="14" /> Existing Customer</span>
+              <span class="flex items-center gap-1.5"><AppIcon name="users" :size="14" /> Existing Client</span>
             </button>
             <button type="button" @click="clientMode = 'prospect'" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all" :class="clientMode === 'prospect' ? 'bg-surface text-foreground shadow-sm' : 'text-muted hover:text-foreground'">
               <span class="flex items-center gap-1.5"><AppIcon name="users" :size="14" /> Prospect</span>
@@ -202,7 +202,7 @@ async function submit() {
 
           <div v-if="clientMode === 'customer'" class="space-y-4">
             <label class="block">
-              <span class="text-sm text-muted mb-1.5 block">Customer <span class="text-negative">*</span></span>
+              <span class="text-sm text-muted mb-1.5 block">Client <span class="text-negative">*</span></span>
               <RecordPicker v-model="customerId" :options="customerOptions" placeholder="Select customer" />
             </label>
             <div v-if="selectedCustomer" class="flex items-center gap-3 p-3.5 rounded-xl bg-primary-soft border border-primary/15">
@@ -223,7 +223,7 @@ async function submit() {
                 <input v-model="prospectName" type="text" placeholder="e.g. Anjali Menon" class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
               </label>
               <label class="block">
-                <span class="text-sm text-muted mb-1.5 block">Customer Type</span>
+                <span class="text-sm text-muted mb-1.5 block">Client Type</span>
                 <select v-model="prospectType" class="w-full py-2.5 px-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
                   <option>Individual</option>
                   <option>Company</option>

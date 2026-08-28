@@ -5,7 +5,7 @@ import KpiCard from "@/components/KpiCard.vue"
 import DonutChart from "@/components/DonutChart.vue"
 import BalancePill from "@/components/BalancePill.vue"
 import AppIcon from "@/components/AppIcon.vue"
-import { formatCurrency, formatDate } from "@/format.js"
+import { formatDate } from "@/format.js"
 import { fetchDashboardData } from "@/data/dashboard.js"
 
 const router = useRouter()
@@ -15,7 +15,7 @@ const error = ref(null)
 const stats = ref({
   plotCount: 0,
   workCount: 0,
-  invoicedTotal: 0,
+  customerCount: 0,
   invoiceStatus: [],
   lowBalancePlots: [],
   estimateActiveCount: 0,
@@ -47,7 +47,6 @@ const quickActions = [
   { label: "Log New Work", desc: "Record labor, equipment & material", icon: "plus", to: "/works/new" },
   { label: "New Estimate", desc: "Start a client BOQ from a template", icon: "estimate", to: "/estimates/new" },
   { label: "Schedule Site Visit", desc: "Book a slot and calculate the charge", icon: "calendar", to: "/site-visits/new" },
-  { label: "Custom Reports", desc: "Roll-ups by plot, cluster & owner", icon: "file", to: "/works" },
 ]
 </script>
 
@@ -63,7 +62,9 @@ const quickActions = [
       <button class="text-left w-full rounded-xl transition-transform hover:-translate-y-0.5" @click="router.push('/works')">
         <KpiCard label="Works Logged" :value="loading ? '—' : String(stats.workCount)" icon="work" accent="accent" />
       </button>
-      <KpiCard label="Invoiced Amount" :value="loading ? '—' : formatCurrency(stats.invoicedTotal)" icon="wallet" accent="info" />
+      <button class="text-left w-full rounded-xl transition-transform hover:-translate-y-0.5" @click="router.push('/owners')">
+        <KpiCard label="Clients" :value="loading ? '—' : String(stats.customerCount)" icon="users" accent="info" />
+      </button>
       <button class="text-left w-full rounded-xl transition-transform hover:-translate-y-0.5" @click="router.push('/estimates')">
         <KpiCard label="Active Estimates" :value="loading ? '—' : String(stats.estimateActiveCount)" icon="estimate" accent="primary" />
       </button>
@@ -78,7 +79,7 @@ const quickActions = [
     <!-- Quick actions -->
     <div class="space-y-3">
       <h2 class="font-display text-lg font-semibold text-foreground">Quick Actions</h2>
-      <div class="grid sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <button
           v-for="a in quickActions"
           :key="a.label"

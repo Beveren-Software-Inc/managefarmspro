@@ -17,7 +17,7 @@ onMounted(async () => {
   try {
     customers.value = await fetchCustomers()
   } catch (e) {
-    error.value = e.messages?.[0] || e.message || "Failed to load customers."
+    error.value = e.messages?.[0] || e.message || "Failed to load clients."
   } finally {
     loading.value = false
   }
@@ -81,7 +81,7 @@ async function submitNewCustomer() {
     showAddCustomer.value = false
     router.push(`/owners/${created.name}`)
   } catch (e) {
-    createError.value = e.messages?.[0] || e.message || "Failed to create this customer."
+    createError.value = e.messages?.[0] || e.message || "Failed to create this client."
   } finally {
     creatingCustomer.value = false
   }
@@ -116,7 +116,7 @@ const filtered = computed(() =>
 
   <div v-else class="space-y-5">
     <div class="sticky top-16 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-background/95 backdrop-blur border-b border-border flex flex-col lg:flex-row lg:items-end gap-3">
-      <p class="text-sm text-muted lg:pb-2.5">{{ loading ? "Loading…" : `${filtered.length} customers` }}</p>
+      <p class="text-sm text-muted lg:pb-2.5">{{ loading ? "Loading…" : `${filtered.length} clients` }}</p>
       <div class="lg:ml-auto flex flex-wrap items-end gap-3">
         <label class="block">
           <span class="text-xs text-muted mb-1.5 block">Search</span>
@@ -125,7 +125,7 @@ const filtered = computed(() =>
             <input
               v-model="query"
               type="search"
-              placeholder="Search customers…"
+              placeholder="Search clients…"
               class="w-full sm:w-56 pl-9 pr-3 py-2.5 rounded-lg bg-surface border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
@@ -142,13 +142,13 @@ const filtered = computed(() =>
           class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-hover transition-colors"
           @click="openAddCustomer"
         >
-          <AppIcon name="plus" :size="17" /> Add Customer
+          <AppIcon name="plus" :size="17" /> Add Client
         </button>
       </div>
     </div>
 
-    <p v-if="loading" class="text-sm text-muted text-center py-16">Loading customers…</p>
-    <p v-else-if="!filtered.length" class="text-sm text-muted text-center py-16">No customers match these filters.</p>
+    <p v-if="loading" class="text-sm text-muted text-center py-16">Loading clients…</p>
+    <p v-else-if="!filtered.length" class="text-sm text-muted text-center py-16">No clients match these filters.</p>
 
     <template v-else>
       <!-- Table on desktop -->
@@ -156,7 +156,7 @@ const filtered = computed(() =>
         <table class="w-full text-sm">
           <thead>
             <tr class="text-left text-muted border-b border-border bg-surface-muted/50">
-              <th class="font-medium px-5 py-3">Customer</th>
+              <th class="font-medium px-5 py-3">Client</th>
               <th class="font-medium px-5 py-3">Type</th>
               <th class="font-medium px-5 py-3">Contact</th>
               <th class="font-medium px-5 py-3">Plots</th>
@@ -224,16 +224,16 @@ const filtered = computed(() =>
             <span class="flex items-center justify-center w-9 h-9 rounded-lg bg-primary-soft text-primary shrink-0">
               <AppIcon name="users" :size="18" />
             </span>
-            <h3 class="font-display text-lg font-semibold text-foreground">Add Customer</h3>
+            <h3 class="font-display text-lg font-semibold text-foreground">Add Client</h3>
           </div>
 
           <div class="grid sm:grid-cols-2 gap-3">
             <label class="block sm:col-span-2">
-              <span class="text-xs text-muted mb-1 block">Customer Name *</span>
+              <span class="text-xs text-muted mb-1 block">Client Name *</span>
               <input v-model="newCustomer.customer_name" type="text" placeholder="e.g. Aashish Kumar" class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30" />
             </label>
             <label class="block">
-              <span class="text-xs text-muted mb-1 block">Customer Phone</span>
+              <span class="text-xs text-muted mb-1 block">Client Phone</span>
               <div class="flex gap-1.5">
                 <select v-model="newCustomer.phone_code" class="w-20 px-2 py-2 rounded-lg bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
                   <option v-for="code in COUNTRY_CODES" :key="code">{{ code }}</option>
@@ -242,11 +242,11 @@ const filtered = computed(() =>
               </div>
             </label>
             <label class="block">
-              <span class="text-xs text-muted mb-1 block">Customer Email</span>
+              <span class="text-xs text-muted mb-1 block">Client Email</span>
               <input v-model="newCustomer.customer_email" type="email" placeholder="name@example.com" class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30" />
             </label>
             <label class="block">
-              <span class="text-xs text-muted mb-1 block">Customer Type *</span>
+              <span class="text-xs text-muted mb-1 block">Client Type *</span>
               <select v-model="newCustomer.customer_type" class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
                 <option>Company</option>
                 <option>Individual</option>
@@ -254,7 +254,7 @@ const filtered = computed(() =>
               </select>
             </label>
             <label class="block">
-              <span class="text-xs text-muted mb-1 block">Customer Since</span>
+              <span class="text-xs text-muted mb-1 block">Client Since</span>
               <input v-model="newCustomer.customer_since" type="date" class="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
             </label>
             <label class="flex items-center gap-2 text-sm text-foreground cursor-pointer sm:col-span-2">
@@ -266,7 +266,7 @@ const filtered = computed(() =>
           <div class="pt-1 border-t border-border">
             <label class="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer pt-3">
               <input type="checkbox" v-model="newCustomer.is_internal_customer" class="rounded border-border" />
-              Is Internal Customer
+              Is Internal Client
             </label>
           </div>
 
@@ -297,7 +297,7 @@ const filtered = computed(() =>
             :disabled="creatingCustomer || !newCustomer.customer_name.trim()"
             @click="submitNewCustomer"
           >
-            {{ creatingCustomer ? "Creating…" : "Create Customer" }}
+            {{ creatingCustomer ? "Creating…" : "Create Client" }}
           </button>
         </div>
       </div>
