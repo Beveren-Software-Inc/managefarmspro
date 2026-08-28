@@ -13,7 +13,7 @@
    "label": "Daily Works Count"
   }
  ],
- "content": "[{\"id\":\"oN-4yVuYON\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>                  Philosan Farm Management</b></span>\",\"col\":12}},{\"id\":\"ospaCTA001\",\"type\":\"paragraph\",\"data\":{\"text\":\"<a href=\\\"/farmpro\\\" target=\\\"_blank\\\" rel=\\\"noopener noreferrer\\\" style=\\\"display:inline-flex;align-items:center;gap:8px;background:#174c3b;color:#f8faf5;font-weight:600;font-size:14px;padding:10px 20px;border-radius:8px;text-decoration:none;\\\">Open ManageFarmsPro App &#8599;</a>\",\"col\":12}},{\"id\":\"jvLH3foq78\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Low Balance Plots\",\"col\":3}},{\"id\":\"KgJ-8KRn3I\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Plot\",\"col\":3}},{\"id\":\"MlwaJpyPTF\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Works\",\"col\":3}},{\"id\":\"Zr3Wn1Rtt-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Generate Invoice\",\"col\":3}},{\"id\":\"P4EISR8Hm9\",\"type\":\"card\",\"data\":{\"card_name\":\"Customer\",\"col\":3}},{\"id\":\"urE5XnV80r\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Plots\",\"col\":3}},{\"id\":\"Qygqe0ueFG\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Works\",\"col\":3}},{\"id\":\"etQJMheibv\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Invoiced Amount\",\"col\":3}},{\"id\":\"BigEvAq73H\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Daily Works Count\",\"col\":6}},{\"id\":\"LM9-KUxdpS\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Invoice Status\",\"col\":6}},{\"id\":\"UZ0jeFJQ7h\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Work Type vs Revenue\",\"col\":12}},{\"id\":\"V6DOROpP7i\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Recent Works\",\"col\":6}},{\"id\":\"l30ak0BLzC\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Unpaid Invoices\",\"col\":6}}]",
+ "content": "[{\"id\":\"oN-4yVuYON\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>                  Philosan Farm Management</b></span>\",\"col\":12}},{\"id\":\"ospaCTA001\",\"type\":\"paragraph\",\"data\":{\"text\":\"<a href=\\\"/farmpro\\\" target=\\\"_blank\\\" rel=\\\"noopener noreferrer\\\" style=\\\"display:inline-flex;align-items:center;gap:8px;background:#174c3b;color:#f8faf5;font-weight:600;font-size:14px;padding:10px 20px;border-radius:8px;text-decoration:none;\\\">Open ManageFarmsPro App &#8599;</a>\",\"col\":12}},{\"id\":\"jvLH3foq78\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Low Balance Plots\",\"col\":3}},{\"id\":\"KgJ-8KRn3I\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Plot\",\"col\":3}},{\"id\":\"MlwaJpyPTF\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Works\",\"col\":3}},{\"id\":\"Zr3Wn1Rtt-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Generate Invoice\",\"col\":3}},{\"id\":\"itemShrt01\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item\",\"col\":3}},{\"id\":\"P4EISR8Hm9\",\"type\":\"card\",\"data\":{\"card_name\":\"Customer\",\"col\":3}},{\"id\":\"urE5XnV80r\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Plots\",\"col\":3}},{\"id\":\"Qygqe0ueFG\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Works\",\"col\":3}},{\"id\":\"etQJMheibv\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Invoiced Amount\",\"col\":3}},{\"id\":\"BigEvAq73H\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Daily Works Count\",\"col\":6}},{\"id\":\"LM9-KUxdpS\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Invoice Status\",\"col\":6}},{\"id\":\"UZ0jeFJQ7h\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Work Type vs Revenue\",\"col\":12}},{\"id\":\"V6DOROpP7i\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Recent Works\",\"col\":6}},{\"id\":\"l30ak0BLzC\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Unpaid Invoices\",\"col\":6}}]",
  "creation": "2024-08-05 10:52:28.263999",
  "custom_blocks": [],
  "docstatus": 0,
@@ -56,7 +56,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-02-10 13:39:47.693697",
+ "modified": "2026-08-28 09:57:18.362962",
  "modified_by": "Administrator",
  "module": "Managefarmspro",
  "name": "ManageFarmsPro",
@@ -124,6 +124,15 @@
    "label": "Works",
    "link_to": "Work",
    "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "{} Available",
+   "label": "Item",
+   "link_to": "Item",
+   "stats_filter": "{\n    \"disabled\": 0\n}",
    "type": "DocType"
   }
  ],
