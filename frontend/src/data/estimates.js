@@ -195,7 +195,15 @@ export async function createEstimate(draft) {
     perimeter_ft: draft.perimeter_ft || null,
     duration: draft.duration,
     line_items: draft.line_items,
+    section_discounts: draft.section_discounts,
     cost_components: draft.cost_components,
+    profit_type: draft.profit_type,
+    profit_value: draft.profit_value,
+    tax_percent: draft.tax_percent,
+    cost_subtotal: draft.cost_subtotal,
+    subtotal_before_profit: draft.subtotal_before_profit,
+    subtotal_before_tax: draft.subtotal_before_tax,
+    grand_total: draft.grand_total,
   }
   return call("frappe.client.insert", { doc })
 }

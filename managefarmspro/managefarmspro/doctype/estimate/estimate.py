@@ -1,13 +1,75 @@
 # Copyright (c) 2026, FigAi GenAi Solutions and contributors
 # For license information, please see license.txt
 
+import math
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import now_datetime
+from frappe.utils import flt, now_datetime
+
+
+def round_half_up(value):
+	# Python's round() is banker's rounding (round(2.5) == 2) - the frontend
+	# preview (EstimateBuilderView.vue's `calc`) uses JS's Math.round, which
+	# always rounds .5 away from zero. Using plain round() here would let the
+	# server-computed total silently drift by a rupee from what the Builder
+	# screen just showed the user for the same numbers. All values here are
+	# non-negative money amounts.
+	return math.floor(flt(value) + 0.5)
 
 
 class Estimate(Document):
+	def validate(self):
+		self.calculate_totals()
+
+	def calculate_totals(self):
+		# Every rollup total (cost_subtotal, subtotal_before_profit,
+		# subtotal_before_tax, grand_total) and each cost component's `amount`
+		# used to be trusted verbatim from whatever the client sent - and a
+		# frontend bug once shipped brand-new Estimates with correct line
+		# items but these fields silently dropped from the create payload,
+		# so they saved as 0 while the line items themselves were fine
+		# (confirmed live: a real Estimate had correct per-section subtotals
+		# but cost_subtotal/grand_total stuck at 0 on the generated PDF).
+		# Recomputing here from the real inputs (line items, section
+		# discounts, cost component rates, profit/tax settings) on every
+		# save closes that whole class of bug for good - these fields can
+		# never again diverge from what the line items actually say,
+		# regardless of what any future client payload does or doesn't send.
+		# Mirrors EstimateBuilderView.vue's `calc` computed property exactly.
+		section_discount_pct = {sd.section: (sd.discount_percent or 0) for sd in self.section_discounts}
+
+		section_gross = {}
+		for li in self.line_items:
+			section = li.section or "General"
+			section_gross[section] = section_gross.get(section, 0) + flt(li.amount)
+
+		cost_subtotal = 0
+		for section, gross in section_gross.items():
+			discount_amount = round_half_up(gross * section_discount_pct.get(section, 0) / 100)
+			cost_subtotal += gross - discount_amount
+
+		for c in self.cost_components:
+			c.amount = round_half_up(cost_subtotal * flt(c.value) / 100) if c.charge_type == "Percent" else flt(c.value)
+
+		components_total = sum(flt(c.amount) for c in self.cost_components)
+		subtotal_before_profit = cost_subtotal + components_total
+
+		if self.profit_type == "Fixed":
+			profit = flt(self.profit_value)
+		else:
+			profit = round_half_up(subtotal_before_profit * flt(self.profit_value) / 100)
+
+		subtotal_before_tax = subtotal_before_profit + profit
+		tax = round_half_up(subtotal_before_tax * flt(self.tax_percent) / 100)
+		grand_total = subtotal_before_tax + tax
+
+		self.cost_subtotal = cost_subtotal
+		self.subtotal_before_profit = subtotal_before_profit
+		self.subtotal_before_tax = subtotal_before_tax
+		self.grand_total = grand_total
+
 	def on_submit(self):
 		# db_set, not self.approved_on = ...; on_submit runs after the doc is
 		# already saved for this transition, so this needs its own targeted

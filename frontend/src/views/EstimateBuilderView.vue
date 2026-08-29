@@ -446,8 +446,7 @@ async function createNow() {
       width_ft: estimateDraft.width_ft,
       perimeter_ft: estimateDraft.perimeter_ft,
       duration: estimateDraft.duration,
-      line_items: state.line_items,
-      cost_components: state.cost_components,
+      ...state,
     })
     clearEstimateDraft()
     router.push(`/estimates/${created.name}`)
